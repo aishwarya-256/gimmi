@@ -1,0 +1,74 @@
+import { getMemberDashboard } from "./actions";
+import { CreditCard, CalendarCheck, Activity, Megaphone } from "lucide-react";
+
+export default async function MemberDashboard(props: { params: Promise<{ gymSlug: string }> }) {
+  const { gymSlug } = await props.params;
+  const data = await getMemberDashboard(gymSlug);
+
+  return (
+    <div className="space-y-8">
+      {/* Welcome Header */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-500/10 via-teal-500/5 to-transparent border border-white/[0.06] p-8">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-[80px] -z-10"></div>
+        <h1 className="text-3xl font-black text-white tracking-tight">Welcome back 👋</h1>
+        <p className="text-gray-400 mt-2">Here&apos;s your membership overview at <span className="text-emerald-400 font-semibold">{data.gym.name}</span></p>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="p-5 rounded-2xl bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.05] transition-all duration-300 hover:-translate-y-1">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="p-2 rounded-xl bg-emerald-500/10 ring-1 ring-emerald-500/20">
+              <CreditCard size={18} className="text-emerald-400" />
+            </div>
+          </div>
+          <p className="text-sm text-gray-500">Plan</p>
+          <p className="text-xl font-bold text-white mt-1">{data.membership.plan?.name || "No plan"}</p>
+        </div>
+
+        <div className="p-5 rounded-2xl bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.05] transition-all duration-300 hover:-translate-y-1">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="p-2 rounded-xl bg-indigo-500/10 ring-1 ring-indigo-500/20">
+              <CalendarCheck size={18} className="text-indigo-400" />
+            </div>
+          </div>
+          <p className="text-sm text-gray-500">Total Visits</p>
+          <p className="text-xl font-bold text-white mt-1">{data.totalVisits}</p>
+        </div>
+
+        <div className="p-5 rounded-2xl bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.05] transition-all duration-300 hover:-translate-y-1">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="p-2 rounded-xl bg-violet-500/10 ring-1 ring-violet-500/20">
+              <Activity size={18} className="text-violet-400" />
+            </div>
+          </div>
+          <p className="text-sm text-gray-500">Status</p>
+          <p className={`text-xl font-bold mt-1 ${data.membership.status === "ACTIVE" ? "text-emerald-400" : "text-red-400"}`}>
+            {data.membership.status}
+          </p>
+        </div>
+      </div>
+
+      {/* Announcements */}
+      <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-6">
+        <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+          <Megaphone size={18} className="text-emerald-400" />
+          Gym Announcements
+        </h2>
+        {data.announcements.length === 0 ? (
+          <p className="text-gray-500 text-sm">No announcements from your gym yet.</p>
+        ) : (
+          <div className="space-y-3">
+            {data.announcements.map((a) => (
+              <div key={a.id} className="p-4 bg-white/[0.02] border border-white/[0.05] rounded-xl hover:bg-white/[0.04] transition-all">
+                <h3 className="text-sm font-semibold text-white">{a.title}</h3>
+                <p className="text-xs text-gray-500 mt-1.5 leading-relaxed">{a.content}</p>
+                <p className="text-[11px] text-gray-600 mt-2">{new Date(a.createdAt).toLocaleDateString()}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
