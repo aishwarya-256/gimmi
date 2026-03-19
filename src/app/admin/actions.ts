@@ -3,6 +3,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { PrismaClient } from "@prisma/client";
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 
 const prisma = new PrismaClient();
 
@@ -57,4 +58,40 @@ export async function createGymAction(formData: FormData) {
   });
 
   redirect(`/${cleanSlug}/admin`);
+}
+
+export async function deleteGymAction(formData: FormData) {
+  const { userId } = await auth();
+  if (!userId) throw new Error("Unauthorized");
+
+  const gymId = formData.get("gymId") as string;
+  if (!gymId) throw new Error("Gym ID is required.");
+
+  // Ensure current user is the actual OWNER of this gym
+  const membership = await prisma.gymMember.findUnique({
+    where: { userId_gymId: { userId, gymId } }
+  });
+
+  if (!membership || membership.role !== "OWNER") {
+    throw new Error("Only the owner can delete this gym.");
+  }
+
+  // 1. Delete all related check-in records
+  await prisma.attendance.deleteMany({ where: { gymId } });
+
+  // 2. Delete all gym announcements
+  await prisma.announcement.deleteMany({ where: { gymId } });
+
+  // 3. Delete all membership plans
+  await prisma.membershipPlan.deleteMany({ where: { gymId } });
+
+  // 4. Delete all gym members
+  await prisma.gymMember.deleteMany({ where: { gymId } });
+
+  // 5. Finally, delete the Gym itself
+  await prisma.gym.delete({
+    where: { id: gymId }
+  });
+
+  revalidatePath("/admin");
 }

@@ -2,6 +2,7 @@
 
 import { auth } from "@clerk/nextjs/server";
 import { PrismaClient } from "@prisma/client";
+import { notFound, redirect } from "next/navigation";
 import jwt from "jsonwebtoken";
 
 const prisma = new PrismaClient();
@@ -10,18 +11,19 @@ const QR_SECRET = process.env.CLERK_SECRET_KEY || "gimmi-qr-secret-fallback";
 // Verify user is an active member of this gym
 async function verifyActiveMember(gymSlug: string) {
   const { userId } = await auth();
-  if (!userId) throw new Error("Unauthorized");
+  if (!userId) redirect("/sign-in");
 
   const gym = await prisma.gym.findUnique({ where: { slug: gymSlug } });
-  if (!gym) throw new Error("Gym not found");
+  if (!gym) notFound();
 
   const membership = await prisma.gymMember.findUnique({
     where: { userId_gymId: { userId, gymId: gym.id } },
     include: { plan: true },
   });
 
-  if (!membership) throw new Error("You are not a member of this gym.");
-  if (membership.status !== "ACTIVE") throw new Error("Your membership is not active.");
+  if (!membership || membership.status !== "ACTIVE") {
+    redirect(`/${gymSlug}/join`);
+  }
 
   return { gym, membership, userId };
 }

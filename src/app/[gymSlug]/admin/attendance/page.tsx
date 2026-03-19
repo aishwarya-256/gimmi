@@ -1,163 +1,127 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { QrCode, CheckCircle, XCircle, Clock, AlertTriangle, Camera } from "lucide-react";
+import { useState, useEffect } from "react";
+import { CheckCircle, XCircle, Printer, QrCode, MapPin } from "lucide-react";
+import QRCode from "react-qr-code";
 
 type ScanResult = {
+  id: string;
   status: string;
-  message: string;
-  memberName?: string;
-  memberRole?: string;
-  entryTime?: string;
-  lastEntry?: string;
+  method: string;
+  entryTime: string;
+  user: {
+    firstName: string;
+    lastName: string;
+    emailAddresses: { emailAddress: string }[];
+  } | null;
 };
 
 export default function QRScannerPage({ params }: { params: Promise<{ gymSlug: string }> }) {
   const [gymSlug, setGymSlug] = useState("");
-  const [manualToken, setManualToken] = useState("");
-  const [result, setResult] = useState<ScanResult | null>(null);
-  const [scanning, setScanning] = useState(false);
-  const [history, setHistory] = useState<ScanResult[]>([]);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [origin, setOrigin] = useState("");
 
   useEffect(() => {
     params.then((p) => setGymSlug(p.gymSlug));
+    setOrigin(window.location.origin);
   }, [params]);
 
-  // Auto-focus the input for barcode scanner hardware
-  useEffect(() => {
-    inputRef.current?.focus();
-  }, [result]);
-
-  async function verifyToken(token: string) {
-    if (!token.trim()) return;
-    setScanning(true);
-    setResult(null);
-
-    try {
-      const res = await fetch("/api/verify-qr", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token }),
-      });
-      const data = await res.json();
-      setResult(data);
-      setHistory((prev) => [data, ...prev].slice(0, 20));
-    } catch {
-      setResult({ status: "DENIED_INVALID", message: "Network error — could not verify." });
-    }
-
-    setManualToken("");
-    setScanning(false);
-  }
-
-  const statusUI: Record<string, { icon: React.ReactNode; bg: string; border: string; text: string }> = {
-    SUCCESS: {
-      icon: <CheckCircle size={48} />,
-      bg: "bg-emerald-500/10",
-      border: "border-emerald-500/30",
-      text: "text-emerald-400",
-    },
-    DENIED_EXPIRED: {
-      icon: <XCircle size={48} />,
-      bg: "bg-red-500/10",
-      border: "border-red-500/30",
-      text: "text-red-400",
-    },
-    DENIED_COOLDOWN: {
-      icon: <Clock size={48} />,
-      bg: "bg-amber-500/10",
-      border: "border-amber-500/30",
-      text: "text-amber-400",
-    },
-    DENIED_INVALID: {
-      icon: <AlertTriangle size={48} />,
-      bg: "bg-red-500/10",
-      border: "border-red-500/30",
-      text: "text-red-400",
-    },
-  };
-
-  const currentUI = result ? statusUI[result.status] || statusUI.DENIED_INVALID : null;
+  const checkInUrl = `${origin}/${gymSlug}/check-in`;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 pb-12">
       <div>
-        <h1 className="text-3xl font-black text-white tracking-tight">QR Scanner</h1>
-        <p className="text-gray-500 text-sm mt-1">Scan member QR codes to record attendance</p>
+        <h1 className="text-3xl font-black text-white tracking-tight">Wall QR Poster</h1>
+        <p className="text-gray-500 text-sm mt-1">Print this static QR code and place it at your front desk or wall.</p>
       </div>
 
-      {/* Scanner Input Area */}
-      <div className="bg-white/[0.03] border border-white/[0.06] rounded-3xl p-8 text-center relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-transparent -z-10"></div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        
+        {/* Printable Poster Section */}
+        <div className="bg-white/[0.03] border border-white/[0.06] rounded-3xl p-8 flex flex-col items-center text-center relative overflow-hidden group">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-[80px] -z-10 group-hover:bg-indigo-500/20 transition-all duration-700"></div>
+          
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-bold uppercase tracking-widest mb-8">
+            <QrCode size={14} /> Official Gimmi Check-In
+          </div>
 
-        {/* Result Display */}
-        {result && currentUI ? (
-          <div className={`mb-8 p-8 rounded-2xl ${currentUI.bg} border ${currentUI.border} transition-all animate-in`}>
-            <div className={`${currentUI.text} mb-4 flex justify-center`}>{currentUI.icon}</div>
-            <p className={`text-2xl font-black ${currentUI.text}`}>{result.memberName || "Unknown"}</p>
-            <p className="text-sm text-gray-400 mt-2">{result.message}</p>
-            {result.memberRole && (
-              <p className="text-xs text-gray-500 mt-1">Role: {result.memberRole}</p>
+          <div className="bg-white p-6 rounded-3xl shadow-2xl ring-4 ring-white/10 mb-8 transform group-hover:scale-105 transition-transform duration-500">
+            {gymSlug && origin ? (
+              <QRCode 
+                value={checkInUrl}
+                size={220}
+                level="H"
+                fgColor="#0a0a0a"
+                bgColor="#ffffff"
+              />
+            ) : (
+              <div className="w-[220px] h-[220px] bg-gray-100 rounded-xl animate-pulse flex items-center justify-center">
+                <QrCode className="text-gray-300 w-12 h-12" />
+              </div>
             )}
           </div>
-        ) : (
-          <div className="mb-8 p-12">
-            <Camera size={64} className="mx-auto text-gray-700 mb-4" />
-            <p className="text-gray-500">Waiting for QR scan...</p>
-            <p className="text-xs text-gray-600 mt-2">Paste or scan a member&apos;s QR code below</p>
-          </div>
-        )}
 
-        {/* Manual Input / Hardware Scanner Capture */}
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            verifyToken(manualToken);
-          }}
-          className="flex gap-3 max-w-xl mx-auto"
-        >
-          <input
-            ref={inputRef}
-            type="text"
-            value={manualToken}
-            onChange={(e) => setManualToken(e.target.value)}
-            placeholder="Paste QR token here or use scanner..."
-            className="flex-1 px-4 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-600 focus:ring-2 focus:ring-indigo-500 focus:outline-none transition-all text-sm font-mono"
-          />
-          <button
-            type="submit"
-            disabled={scanning}
-            className="px-6 py-3.5 bg-gradient-to-r from-indigo-500 to-violet-500 hover:from-indigo-400 hover:to-violet-400 text-white font-bold rounded-xl transition-all text-sm disabled:opacity-50 hover:scale-[1.02] active:scale-[0.98]"
+          <h2 className="text-2xl font-black text-white mb-2 tracking-tight">Scan to Enter</h2>
+          <p className="text-gray-400 text-sm max-w-xs leading-relaxed mb-8">
+            Members simply open their native phone camera, scan this code, and their attendance is instantly verified and logged.
+          </p>
+
+          <button 
+            onClick={() => window.print()}
+            className="w-full sm:w-auto px-8 py-4 bg-white text-black font-bold rounded-xl hover:bg-gray-200 transition-all flex items-center justify-center gap-3 shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:scale-105 active:scale-95"
           >
-            {scanning ? "Verifying..." : "Verify"}
+            <Printer size={18} />
+            Print Desk Poster
           </button>
-        </form>
-      </div>
-
-      {/* Recent Scans History */}
-      {history.length > 0 && (
-        <div className="space-y-3">
-          <h2 className="text-lg font-bold text-white">Recent Scans</h2>
-          {history.map((scan, i) => {
-            const ui = statusUI[scan.status] || statusUI.DENIED_INVALID;
-            return (
-              <div key={i} className={`flex items-center gap-4 p-4 bg-white/[0.02] border border-white/[0.05] rounded-xl`}>
-                <div className={`p-2 rounded-lg ${ui.bg} ${ui.text}`}>
-                  {scan.status === "SUCCESS" ? <CheckCircle size={16} /> : <XCircle size={16} />}
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-semibold text-white">{scan.memberName || "Unknown"}</p>
-                  <p className="text-xs text-gray-500">{scan.message}</p>
-                </div>
-                <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full ${ui.bg} ${ui.text} ring-1 ${ui.border}`}>
-                  {scan.status.replace(/_/g, " ")}
-                </span>
-              </div>
-            );
-          })}
         </div>
-      )}
+
+        {/* Live Attendance Instructions / Feed Placeholder */}
+        <div className="bg-white/[0.03] border border-white/[0.06] rounded-3xl p-8 flex flex-col justify-center relative overflow-hidden">
+          <div className="absolute bottom-0 left-0 w-64 h-64 bg-emerald-500/5 rounded-full blur-[80px] -z-10"></div>
+          
+          <div className="p-4 rounded-2xl bg-black/40 border border-white/[0.04] mb-8">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="p-3 bg-emerald-500/10 rounded-xl">
+                <MapPin className="text-emerald-400" size={24} />
+              </div>
+              <div>
+                <h3 className="text-white font-bold">100% Contactless</h3>
+                <p className="text-xs text-gray-500">No hardware scanners needed.</p>
+              </div>
+            </div>
+            <ul className="space-y-3 text-sm text-gray-400 ml-1">
+              <li className="flex items-start gap-2">
+                <CheckCircle size={16} className="text-emerald-500 shrink-0 mt-0.5" /> 
+                Members scan the poster with their personal iPhone or Android camera.
+              </li>
+              <li className="flex items-start gap-2">
+                <CheckCircle size={16} className="text-emerald-500 shrink-0 mt-0.5" /> 
+                They click the link, and their active subscription is securely verified.
+              </li>
+              <li className="flex items-start gap-2">
+                <CheckCircle size={16} className="text-emerald-500 shrink-0 mt-0.5" /> 
+                A big green checkmark pops up on their screen showing "Access Granted".
+              </li>
+            </ul>
+          </div>
+
+          <div className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/10 opacity-60 grayscale blur-[1px]">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gray-600 rounded-full"></div>
+              <div>
+                <h4 className="text-sm font-bold text-white">Alex Johnson</h4>
+                <p className="text-xs text-gray-400">Checked in just now</p>
+              </div>
+            </div>
+            <div className="px-3 py-1 bg-emerald-500/20 text-emerald-400 text-xs font-bold rounded-lg">
+              SUCCESS
+            </div>
+          </div>
+          <p className="text-center text-xs text-indigo-400 font-semibold tracking-widest uppercase mt-4">
+            Live Check-in Feed Active
+          </p>
+        </div>
+
+      </div>
     </div>
   );
 }

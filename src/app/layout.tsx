@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ClerkProvider, SignInButton, SignUpButton, Show, UserButton } from "@clerk/nextjs";
 import { Activity } from "lucide-react";
@@ -14,9 +14,27 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+export const viewport: Viewport = {
+  themeColor: "#0a0a0a",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: "cover",
+};
+
 export const metadata: Metadata = {
   title: "Gimmi - The Premium Gym OS",
   description: "The ultimate modern platform for fitness communities.",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Gimmi",
+  },
+  formatDetection: {
+    telephone: false,
+  },
 };
 
 export default function RootLayout({
@@ -31,7 +49,7 @@ export default function RootLayout({
           {/* Floating Glass Header */}
           <header className="fixed top-0 w-full z-50 border-b border-white/[0.08] bg-black/60 backdrop-blur-xl transition-all duration-300">
             <div className="max-w-7xl mx-auto px-6 h-20 flex justify-between items-center">
-              
+
               {/* Logo / Brand */}
               <div className="flex items-center gap-3 group cursor-pointer">
                 <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 to-violet-500 flex items-center justify-center text-white shadow-lg shadow-indigo-500/20 group-hover:shadow-indigo-500/40 transition-all duration-500 group-hover:scale-105">
@@ -39,7 +57,7 @@ export default function RootLayout({
                 </div>
                 <span className="font-extrabold text-2xl tracking-tighter text-white">Gimmi</span>
               </div>
-              
+
               {/* Auth Navigation */}
               <div className="flex gap-4 items-center">
                 <Show when="signed-out">
@@ -61,7 +79,7 @@ export default function RootLayout({
 
             </div>
           </header>
-          
+
           <main className="flex-1 w-full flex flex-col pt-20">
             {children}
           </main>

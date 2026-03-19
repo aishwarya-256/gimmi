@@ -18,52 +18,52 @@ export default async function MemberLayout({
   }
 
   const navItems = [
-    { label: "Dashboard", href: `/${gymSlug}`, icon: LayoutDashboard },
+    { label: "Home", href: `/${gymSlug}`, icon: LayoutDashboard },
     { label: "QR Pass", href: `/${gymSlug}/qr`, icon: QrCode },
-    { label: "My Attendance", href: `/${gymSlug}/attendance`, icon: History },
-    { label: "Announcements", href: `/${gymSlug}/announcements`, icon: Megaphone },
+    { label: "Visits", href: `/${gymSlug}/attendance`, icon: History },
+    { label: "News", href: `/${gymSlug}/announcements`, icon: Megaphone },
   ];
 
   return (
-    <div className="flex min-h-screen">
-
-      {/* Sidebar */}
-      <aside className="w-64 border-r border-white/[0.06] bg-black/40 backdrop-blur-md flex flex-col fixed top-20 bottom-0 left-0 z-40">
-        <div className="px-6 py-6 border-b border-white/[0.06]">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-500 flex items-center justify-center text-white shadow-lg shadow-emerald-500/20">
-              <Activity size={16} strokeWidth={2.5} />
-            </div>
-            <div>
-              <p className="text-sm font-bold text-white truncate">{gymSlug}</p>
-              <p className="text-[11px] text-gray-500">Member Portal</p>
-            </div>
+    <div className="flex flex-col min-h-screen bg-[#0a0a0a] pb-24">
+      {/* Top Header (Mobile App Style) */}
+      <header className="sticky top-0 z-40 bg-black/80 backdrop-blur-xl border-b border-white/[0.06] px-5 py-4 flex items-center justify-between shadow-2xl">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-500 flex items-center justify-center text-white shadow-lg shadow-emerald-500/20">
+            <Activity size={18} strokeWidth={2.5} />
+          </div>
+          <div>
+            <h1 className="text-lg font-bold text-white tracking-tight leading-tight capitalize">{gymSlug.replace(/-/g, ' ')}</h1>
+            <p className="text-[11px] text-gray-400 font-medium">Member App</p>
           </div>
         </div>
+        <Link href={`/${gymSlug}/admin`} className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-3 py-1.5 rounded-full ring-1 ring-emerald-500/20 hover:bg-emerald-500/20 transition-all">
+          Admin →
+        </Link>
+      </header>
 
-        <nav className="flex-1 px-3 py-4 space-y-1">
+      {/* Main Content Area */}
+      <main className="flex-1 w-full max-w-lg mx-auto px-4 pt-6">
+        {children}
+      </main>
+
+      {/* Bottom Navigation Bar */}
+      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-black/90 backdrop-blur-2xl border-t border-white/[0.08] px-6 py-2 pb-safe shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
+        <div className="flex items-center justify-between max-w-lg mx-auto">
           {navItems.map((item) => (
             <Link
               key={item.href}
               href={item.href}
-              className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-gray-400 hover:text-white hover:bg-white/[0.06] transition-all duration-200 group"
+              className="flex flex-col items-center gap-1 text-gray-500 hover:text-emerald-400 transition-colors group px-2 py-1"
             >
-              <item.icon size={18} className="text-gray-500 group-hover:text-emerald-400 transition-colors" />
-              {item.label}
+              <div className="p-1.5 rounded-xl group-hover:bg-emerald-500/10 transition-colors relative">
+                <item.icon size={22} className="group-hover:scale-110 transition-transform" />
+              </div>
+              <span className="text-[10px] font-bold tracking-wide">{item.label}</span>
             </Link>
           ))}
-        </nav>
-
-        <div className="px-4 py-4 border-t border-white/[0.06]">
-          <Link href={`/${gymSlug}/admin`} className="text-xs text-gray-600 hover:text-white transition-colors">
-            Admin Panel →
-          </Link>
         </div>
-      </aside>
-
-      <main className="flex-1 ml-64 px-8 py-8">
-        {children}
-      </main>
+      </nav>
     </div>
   );
 }
