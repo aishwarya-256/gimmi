@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { QrCode, CheckCircle, XCircle, Clock, AlertTriangle, Camera } from "lucide-react";
+import { CheckCircle, XCircle, Clock, AlertTriangle, Camera } from "lucide-react";
 
 type ScanResult = {
   status: string;
@@ -12,17 +12,14 @@ type ScanResult = {
   lastEntry?: string;
 };
 
-export default function QRScannerPage({ params }: { params: Promise<{ gymSlug: string }> }) {
-  const [gymSlug, setGymSlug] = useState("");
+export default function QRScannerPage() {
   const [manualToken, setManualToken] = useState("");
   const [result, setResult] = useState<ScanResult | null>(null);
   const [scanning, setScanning] = useState(false);
   const [history, setHistory] = useState<ScanResult[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    params.then((p) => setGymSlug(p.gymSlug));
-  }, [params]);
+  // Use params if needed in the future, e.g., const { gymSlug } = use(params);
 
   // Auto-focus the input for barcode scanner hardware
   useEffect(() => {

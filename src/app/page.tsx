@@ -93,7 +93,7 @@ export default function LandingPage() {
       {/* Interactive Features Grid */}
       <section id="features" className="w-full max-w-7xl mx-auto px-6 py-32 grid grid-cols-1 md:grid-cols-2 gap-8 relative">
         <div className="col-span-1 md:col-span-2 text-center mb-16">
-          <h2 className="text-3xl md:text-5xl font-bold text-white mb-6 tracking-tight">Everything you need. <span className="text-white/30">Nothing you don't.</span></h2>
+          <h2 className="text-3xl md:text-5xl font-bold text-white mb-6 tracking-tight">Everything you need. <span className="text-white/30">Nothing you don&apos;t.</span></h2>
         </div>
 
         <FeatureCard 
