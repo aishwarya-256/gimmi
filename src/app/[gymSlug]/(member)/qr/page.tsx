@@ -1,20 +1,15 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, use } from "react";
 import { generateQRToken } from "../actions";
 import QRCode from "react-qr-code";
 import { QrCode, RefreshCw, ShieldCheck, Clock } from "lucide-react";
 
 export default function QRPassPage({ params }: { params: Promise<{ gymSlug: string }> }) {
-  const [gymSlug, setGymSlug] = useState<string>("");
+  const { gymSlug } = use(params);
   const [token, setToken] = useState<string>("");
   const [timeLeft, setTimeLeft] = useState(30);
   const [loading, setLoading] = useState(true);
-
-  // Resolve params
-  useEffect(() => {
-    params.then((p) => setGymSlug(p.gymSlug));
-  }, [params]);
 
   const fetchToken = useCallback(async () => {
     if (!gymSlug) return;
@@ -29,21 +24,47 @@ export default function QRPassPage({ params }: { params: Promise<{ gymSlug: stri
     setLoading(false);
   }, [gymSlug]);
 
-  // Auto-refresh token every 30 seconds
+  // Handle periodic refresh and countdown
   useEffect(() => {
     if (!gymSlug) return;
-    fetchToken();
-    const interval = setInterval(fetchToken, 30000);
-    return () => clearInterval(interval);
-  }, [gymSlug, fetchToken]);
 
-  // Countdown timer
-  useEffect(() => {
+    let isMounted = true;
+
+    const initFetch = async () => {
+      if (isMounted) {
+        setLoading(true);
+        try {
+          const newToken = await generateQRToken(gymSlug);
+          if (isMounted) {
+            setToken(newToken);
+            setTimeLeft(30);
+          }
+        } catch (err) {
+          console.error("Failed to generate QR token", err);
+        }
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    initFetch();
+
     const timer = setInterval(() => {
-      setTimeLeft((t) => (t > 0 ? t - 1 : 0));
+      setTimeLeft((t) => {
+        if (t <= 1) {
+          initFetch();
+          return 30; // optimistically reset time
+        }
+        return t - 1;
+      });
     }, 1000);
-    return () => clearInterval(timer);
-  }, []);
+
+    return () => {
+      isMounted = false;
+      clearInterval(timer);
+    };
+  }, [gymSlug]);
 
   return (
     <div className="space-y-8 flex flex-col items-center">
