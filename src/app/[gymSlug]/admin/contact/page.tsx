@@ -2,6 +2,7 @@ import { auth } from "@clerk/nextjs/server";
 import { PrismaClient } from "@prisma/client";
 import { Phone, Mail, MessageCircle, MapPin, Save, Building2 } from "lucide-react";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 
 const prisma = new PrismaClient();
 
@@ -9,7 +10,7 @@ async function updateGymContactAction(formData: FormData) {
   "use server";
   
   const { userId } = await auth();
-  if (!userId) throw new Error("Unauthorized");
+  if (!userId) redirect("/sign-in");
   
   const gymSlug = formData.get("gymSlug") as string;
   const ownerPhone = formData.get("ownerPhone") as string;
@@ -26,7 +27,7 @@ async function updateGymContactAction(formData: FormData) {
   });
   
   if (!gym || gym.members.length === 0) {
-    throw new Error("Access denied");
+    redirect("/admin");
   }
   
   await prisma.gym.update({

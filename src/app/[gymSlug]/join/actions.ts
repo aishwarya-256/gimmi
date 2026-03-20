@@ -10,13 +10,13 @@ export async function joinGymAction(formData: FormData) {
   const { userId } = await auth();
   const user = await currentUser();
   
-  if (!userId || !user) throw new Error("Unauthorized");
+  if (!userId || !user) redirect("/sign-in");
 
   const gymId = formData.get("gymId") as string;
   const planId = formData.get("planId") as string;
   const slug = formData.get("slug") as string;
 
-  if (!gymId || !planId) throw new Error("Missing gym or plan ID.");
+  if (!gymId || !planId) redirect("/customer");
 
   // Make sure the user exists in our DB first
   await prisma.user.upsert({

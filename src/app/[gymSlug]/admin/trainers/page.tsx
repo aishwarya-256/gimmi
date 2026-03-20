@@ -2,6 +2,7 @@ import { auth } from "@clerk/nextjs/server";
 import { PrismaClient } from "@prisma/client";
 import { ShieldAlert, CheckCircle, XCircle, User } from "lucide-react";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import Link from "next/link";
 
 const prisma = new PrismaClient();
@@ -10,7 +11,7 @@ async function handleTrainerVerificationAction(formData: FormData) {
   "use server";
   
   const { userId } = await auth();
-  if (!userId) throw new Error("Unauthorized");
+  if (!userId) redirect("/sign-in");
   
   const gymSlug = formData.get("gymSlug") as string;
   const requestId = formData.get("requestId") as string;
@@ -25,7 +26,7 @@ async function handleTrainerVerificationAction(formData: FormData) {
   });
   
   if (!gym || gym.members.length === 0) {
-    throw new Error("Access denied");
+    redirect("/admin");
   }
 
   const request = await prisma.trainerVerificationRequest.findUnique({
@@ -33,7 +34,7 @@ async function handleTrainerVerificationAction(formData: FormData) {
   });
 
   if (!request || request.gymId !== gym.id) {
-    throw new Error("Request not found");
+    redirect(`/${gymSlug}/admin/trainers`);
   }
   
   if (action === "approve") {

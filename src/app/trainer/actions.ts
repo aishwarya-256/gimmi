@@ -32,7 +32,7 @@ export async function checkTrainerRegistration() {
 export async function registerTrainerAction(formData: FormData) {
   const { userId } = await auth();
   const user = await currentUser();
-  if (!userId || !user) throw new Error("Unauthorized");
+  if (!userId || !user) redirect("/trainer/sign-in");
 
   const phone = formData.get("phone") as string;
   const gymId = formData.get("gymId") as string;
@@ -41,7 +41,7 @@ export async function registerTrainerAction(formData: FormData) {
   const bio = formData.get("bio") as string;
 
   if (!gymName) {
-    throw new Error("Gym name is required.");
+    redirect("/trainer/register");
   }
 
   // Ensure user is in our User table (for interaction requests later)
@@ -107,7 +107,7 @@ export async function getTrainerDashboardData() {
 
 export async function handleInteractionRequestAction(formData: FormData) {
   const { userId } = await auth();
-  if (!userId) throw new Error("Unauthorized");
+  if (!userId) redirect("/trainer/sign-in");
 
   const requestId = formData.get("requestId") as string;
   const action = formData.get("action") as string; // 'approve' or 'reject'
@@ -116,7 +116,7 @@ export async function handleInteractionRequestAction(formData: FormData) {
     where: { userId }
   });
 
-  if (!trainer) throw new Error("Trainer profile not found");
+  if (!trainer) redirect("/trainer/register");
 
   await prisma.interactionRequest.update({
     where: { 

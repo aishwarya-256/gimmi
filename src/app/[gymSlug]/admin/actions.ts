@@ -68,7 +68,7 @@ export async function createPlanAction(gymSlug: string, formData: FormData) {
   const price = parseFloat(formData.get("price") as string);
 
   if (!name || isNaN(durationDays) || isNaN(price)) {
-    throw new Error("All fields are required.");
+    return;
   }
 
   await prisma.membershipPlan.create({
@@ -103,7 +103,7 @@ export async function createAnnouncementAction(gymSlug: string, formData: FormDa
   const content = formData.get("content") as string;
 
   if (!title || !content) {
-    throw new Error("Title and content are required.");
+    return;
   }
 
   await prisma.announcement.create({
@@ -161,14 +161,14 @@ export async function getJoinRequests(gymSlug: string) {
 
 export async function handleJoinRequestAction(requestId: string, action: "ACCEPT" | "REJECT") {
   const { userId: adminUserId } = await auth();
-  if (!adminUserId) throw new Error("Unauthorized");
+  if (!adminUserId) redirect("/sign-in");
 
   const request = await prisma.joinRequest.findUnique({
     where: { id: requestId },
     include: { gym: true }
   });
 
-  if (!request) throw new Error("Request not found");
+  if (!request) return;
 
   // Update request status
   await prisma.joinRequest.update({
