@@ -98,21 +98,22 @@ export async function verifyGymEntryAction(gymSlug: string, token: string) {
     where: { slug: gymSlug },
     include: {
       joinRequests: { where: { userId, status: "ACCEPTED" } },
-      members: { where: { userId, status: "ACTIVE" }, include: { plan: true } }
+      members: { where: { userId }, include: { plan: true } }
     }
   });
 
   if (!gym) return { success: false, message: "Gym not found" };
 
-  // 1. Check Join Approval
-  if (gym.joinRequests.length === 0) {
-    return { success: false, message: "Join request not approved by owner" };
-  }
+  const member = gym.members[0];
+  const joinRequest = gym.joinRequests[0];
 
-  // 2. Check Membership Plan
-  const membership = gym.members[0];
-  if (!membership || !membership.plan) {
-    return { success: false, message: "No active membership plan found" };
+  const hasAccess = 
+    (member && ["OWNER", "MANAGER", "STAFF"].includes(member.role)) || 
+    (member && member.status === "ACTIVE") || 
+    (joinRequest);
+
+  if (!hasAccess) {
+    return { success: false, message: "Access Denied: You do not have an active membership here." };
   }
 
   // 3. Verify Token
@@ -151,7 +152,7 @@ export async function verifyGymEntryAction(gymSlug: string, token: string) {
       await pusherServer.trigger(`gym-${gym.id}`, "entry-log", {
         userName: user?.name || "Member",
         userEmail: user?.email,
-        planName: membership.plan.name,
+        planName: member?.plan?.name || member?.role || "Approved Member",
         timestamp: new Date().toISOString(),
       });
     } catch (pushErr) {

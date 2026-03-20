@@ -27,47 +27,28 @@ export default async function CheckInPage(props: { params: Promise<{ gymSlug: st
     return <StatusView status="error" message="Invalid or Expired QR Code" subtext="Please scan the latest poster at the front desk." actionLink={`/${gymSlug}`} actionText="Return Home" />;
   }
 
-  // 2. Validate JoinRequest is ACCEPTED
   const joinRequest = await prisma.joinRequest.findUnique({
     where: { userId_gymId: { userId, gymId: gym.id } },
   });
 
-  if (!joinRequest || joinRequest.status !== "ACCEPTED") {
-    return (
-      <StatusView 
-        status="denied" 
-        message="Your join request has not been approved yet." 
-        subtext="Please wait for the gym owner to accept your request."
-        actionLink={`/${gymSlug}/join`}
-        actionText="View Status"
-      />
-    );
-  }
-
-  // 3. Validate Membership
-  const membership = await prisma.gymMember.findUnique({
+  const member = await prisma.gymMember.findUnique({
     where: { userId_gymId: { userId, gymId: gym.id } },
     include: { plan: true },
   });
 
-  if (!membership) {
-    return (
-      <StatusView 
-        status="denied" 
-        message="You do not have a membership here." 
-        subtext={`Purchase a plan at ${gym.name} to enter.`}
-        actionLink={`/${gymSlug}/join`}
-        actionText="View Plans"
-      />
-    );
-  }
+  const hasAccess = 
+    (member && ["OWNER", "MANAGER", "STAFF"].includes(member.role)) || 
+    (member && member.status === "ACTIVE") || 
+    (joinRequest && joinRequest.status === "ACCEPTED");
 
-  if (membership.status !== "ACTIVE") {
+  if (!hasAccess) {
     return (
       <StatusView 
         status="denied" 
-        message="Your membership is inactive or expired." 
-        subtext="Please renew your plan to enter the gym."
+        message="Access Denied" 
+        subtext="You do not have an active membership at this gym."
+        actionLink={`/${gymSlug}`}
+        actionText="Return Home"
       />
     );
   }
@@ -106,7 +87,7 @@ export default async function CheckInPage(props: { params: Promise<{ gymSlug: st
     await pusherServer.trigger(`gym-${gym.id}`, "entry-log", {
       userName: user?.name || "Member",
       userEmail: user?.email,
-      planName: membership.plan?.name || "Standard",
+      planName: member?.plan?.name || member?.role || "Approved Member",
       timestamp: new Date().toISOString(),
     });
   } catch (pushErr) {
