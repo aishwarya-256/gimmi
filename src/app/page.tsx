@@ -1,4 +1,4 @@
-import { ArrowRight, Activity, Users, Camera, ShieldCheck, ChevronRight, Sparkles } from "lucide-react";
+import { Dumbbell, Activity, Users, Zap, Search, ChevronRight, CheckCircle2, ArrowRight, Sparkles, Camera, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { SignUpButton, Show } from "@clerk/nextjs";
 

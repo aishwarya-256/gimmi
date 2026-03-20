@@ -3,7 +3,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { generateQRToken } from "../actions";
 import QRCode from "react-qr-code";
-import { QrCode, RefreshCw, ShieldCheck, Clock } from "lucide-react";
+import { QrCode, RefreshCw, ShieldCheck, Clock, ArrowLeft } from "lucide-react";
+import Link from "next/link";
 
 export default function QRPassPage({ params }: { params: Promise<{ gymSlug: string }> }) {
   const [gymSlug, setGymSlug] = useState<string>("");
@@ -46,8 +47,13 @@ export default function QRPassPage({ params }: { params: Promise<{ gymSlug: stri
   }, []);
 
   return (
-    <div className="space-y-8 flex flex-col items-center">
-      <div className="text-center">
+    <div className="space-y-4 flex flex-col items-center">
+      <div className="w-full flex justify-start">
+        <Link href={`/${gymSlug}`} className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 hover:bg-white/10 transition-colors text-xs font-medium text-gray-400 border border-white/10">
+          <ArrowLeft size={14} /> Back
+        </Link>
+      </div>
+      <div className="text-center mt-2">
         <h1 className="text-3xl font-black text-white tracking-tight">Your QR Pass</h1>
         <p className="text-gray-500 text-sm mt-2">Show this QR code at the entrance for instant check-in</p>
       </div>

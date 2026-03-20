@@ -1,5 +1,5 @@
 import { getMemberDashboard } from "./actions";
-import { CreditCard, CalendarCheck, Activity, Megaphone } from "lucide-react";
+import { CreditCard, CalendarCheck, Activity, Megaphone, Phone, MessageCircle, Mail, MapPin, Building2 } from "lucide-react";
 
 export default async function MemberDashboard(props: { params: Promise<{ gymSlug: string }> }) {
   const { gymSlug } = await props.params;
@@ -48,6 +48,68 @@ export default async function MemberDashboard(props: { params: Promise<{ gymSlug
           </p>
         </div>
       </div>
+
+      {/* Contact Info (Only for active members) */}
+      {(data.gym.ownerPhone || data.gym.ownerEmail || data.gym.ownerWhatsApp || data.gym.address) && (
+        <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-6 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-[50px] -z-10"></div>
+          
+          <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+            <Building2 size={18} className="text-indigo-400" />
+            Gym Contact Info
+          </h2>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {data.gym.ownerPhone && (
+              <a href={`tel:${data.gym.ownerPhone}`} className="flex items-center gap-3 p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors border border-white/5 group">
+                <div className="p-2 rounded-lg bg-emerald-500/10 group-hover:bg-emerald-500/20 transition-colors">
+                  <Phone size={16} className="text-emerald-400" />
+                </div>
+                <div>
+                  <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Phone</p>
+                  <p className="text-sm text-gray-300 font-medium">{data.gym.ownerPhone}</p>
+                </div>
+              </a>
+            )}
+            
+            {data.gym.ownerWhatsApp && (
+              <a href={`https://wa.me/${data.gym.ownerWhatsApp.replace(/[^0-9]/g, '')}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors border border-white/5 group">
+                <div className="p-2 rounded-lg bg-emerald-500/10 group-hover:bg-emerald-500/20 transition-colors">
+                  <MessageCircle size={16} className="text-emerald-500" />
+                </div>
+                <div>
+                  <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">WhatsApp</p>
+                  <p className="text-sm text-gray-300 font-medium">{data.gym.ownerWhatsApp}</p>
+                </div>
+              </a>
+            )}
+            
+            {data.gym.ownerEmail && (
+              <a href={`mailto:${data.gym.ownerEmail}`} className="flex items-center gap-3 p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors border border-white/5 group">
+                <div className="p-2 rounded-lg bg-indigo-500/10 group-hover:bg-indigo-500/20 transition-colors">
+                  <Mail size={16} className="text-indigo-400" />
+                </div>
+                <div>
+                  <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Email</p>
+                  <p className="text-sm text-gray-300 font-medium truncate max-w-[150px]">{data.gym.ownerEmail}</p>
+                </div>
+              </a>
+            )}
+            
+            {data.gym.address && (
+              <div className="flex items-start gap-3 p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors border border-white/5 sm:col-span-2 group">
+                <div className="p-2 rounded-lg bg-rose-500/10 group-hover:bg-rose-500/20 transition-colors mt-0.5">
+                  <MapPin size={16} className="text-rose-400" />
+                </div>
+                <div>
+                  <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Address</p>
+                  <p className="text-sm text-gray-300 font-medium">{data.gym.address}</p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Announcements */}
       <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-6">

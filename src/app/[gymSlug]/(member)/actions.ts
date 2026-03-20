@@ -49,7 +49,15 @@ export async function getMemberDashboard(gymSlug: string) {
   ]);
 
   return {
-    gym,
+    gym: {
+      id: gym.id,
+      name: gym.name,
+      slug: gym.slug,
+      ownerPhone: gym.ownerPhone,
+      ownerEmail: gym.ownerEmail,
+      ownerWhatsApp: gym.ownerWhatsApp,
+      address: gym.address,
+    },
     membership,
     announcements,
     totalVisits: attendanceCount,

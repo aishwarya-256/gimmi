@@ -1,12 +1,18 @@
 import { getMemberDashboard } from "../actions";
-import { Megaphone } from "lucide-react";
+import { Megaphone, ArrowLeft } from "lucide-react";
+import Link from "next/link";
 
 export default async function MemberAnnouncementsPage(props: { params: Promise<{ gymSlug: string }> }) {
   const { gymSlug } = await props.params;
   const data = await getMemberDashboard(gymSlug);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
+      <div className="w-full flex justify-start">
+        <Link href={`/${gymSlug}`} className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 hover:bg-white/10 transition-colors text-xs font-medium text-gray-400 border border-white/10">
+          <ArrowLeft size={14} /> Back
+        </Link>
+      </div>
       <div>
         <h1 className="text-3xl font-black text-white tracking-tight">Announcements</h1>
         <p className="text-gray-500 text-sm mt-1">Latest updates from your gym</p>

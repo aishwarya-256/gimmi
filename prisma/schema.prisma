@@ -33,30 +33,43 @@ enum ScanStatus {
   DENIED_INVALID
 }
 
+enum VerificationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 model User {
-  id             String        @id
-  email          String        @unique
-  name           String
-  platformRole   PlatformRole  @default(USER)
-  memberships    GymMember[]
-  attendanceLog  Attendance[]
-  stories        Story[]
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  id                    String        @id
+  email                 String        @unique
+  name                  String
+  platformRole          PlatformRole  @default(USER)
+  memberships           GymMember[]
+  attendanceLog         Attendance[]
+  stories               Story[]
+  interactionRequests   InteractionRequest[]
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
 }
 
 model Gym {
-  id             String        @id @default(uuid())
-  slug           String        @unique
-  name           String
-  isActive       Boolean       @default(false)
-  members        GymMember[]
-  plans          MembershipPlan[]
-  announcements  Announcement[]
-  stories        Story[]
-  attendance     Attendance[]
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  id                       String        @id @default(uuid())
+  slug                     String        @unique
+  name                     String
+  isActive                 Boolean       @default(false)
+  ownerPhone               String?
+  ownerEmail               String?
+  ownerWhatsApp            String?
+  address                  String?
+  members                  GymMember[]
+  plans                    MembershipPlan[]
+  announcements            Announcement[]
+  stories                  Story[]
+  attendance               Attendance[]
+  trainerVerifications     TrainerVerificationRequest[]
+  verifiedTrainers         Trainer[]
+  createdAt                DateTime      @default(now())
+  updatedAt                DateTime      @updatedAt
 }
 
 model GymMember {
@@ -118,4 +131,48 @@ model Attendance {
   status         ScanStatus    
   gym            Gym           @relation(fields: [gymId], references: [id])
   user           User          @relation(fields: [userId], references: [id])
+}
+
+model Trainer {
+  id                    String        @id @default(uuid())
+  userId                String        @unique
+  name                  String
+  email                 String
+  phone                 String?
+  specialization        String?
+  bio                   String?
+  gymName               String
+  isVerified            Boolean       @default(false)
+  verifiedByGymId       String?
+  verifiedByGym         Gym?          @relation(fields: [verifiedByGymId], references: [id])
+  verificationRequests  TrainerVerificationRequest[]
+  interactionRequests   InteractionRequest[]
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+}
+
+model TrainerVerificationRequest {
+  id             String              @id @default(uuid())
+  trainerId      String
+  gymId          String
+  status         VerificationStatus  @default(PENDING)
+  trainer        Trainer             @relation(fields: [trainerId], references: [id])
+  gym            Gym                 @relation(fields: [gymId], references: [id])
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  @@unique([trainerId, gymId])
+}
+
+model InteractionRequest {
+  id             String              @id @default(uuid())
+  userId         String
+  trainerId      String
+  status         VerificationStatus  @default(PENDING)
+  user           User                @relation(fields: [userId], references: [id])
+  trainer        Trainer             @relation(fields: [trainerId], references: [id])
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  @@unique([userId, trainerId])
 }
