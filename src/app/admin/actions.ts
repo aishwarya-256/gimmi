@@ -1,6 +1,6 @@
 "use server";
 
-import { auth } from "@clerk/nextjs/server";
+import { auth, currentUser } from "@clerk/nextjs/server";
 import { PrismaClient } from "@prisma/client";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
@@ -9,28 +9,32 @@ const prisma = new PrismaClient();
 
 export async function createGymAction(formData: FormData) {
   const { userId } = await auth();
+  const user = await currentUser();
 
-  if (!userId) {
-    throw new Error("Unauthorized — please sign in first.");
+  if (!userId || !user) {
+    redirect("/sign-in");
   }
 
   const name = formData.get("name") as string;
   const slug = formData.get("slug") as string;
 
   if (!name || !slug) {
-    throw new Error("Name and Slug are required.");
+    redirect("/admin");
   }
 
   const cleanSlug = slug.toLowerCase().replace(/[^a-z0-9-]/g, "");
 
-  // 1. Ensure user exists in our DB
+  // 1. Ensure user exists in our DB (use real Clerk data)
   await prisma.user.upsert({
     where: { id: userId },
-    update: {},
+    update: {
+      name: user.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : "Platform Admin",
+      email: user.emailAddresses[0]?.emailAddress || `user-${userId.slice(0, 8)}@gimmi.app`,
+    },
     create: {
       id: userId,
-      email: `user-${userId.slice(0, 8)}@gimmi.app`,
-      name: "Platform Admin",
+      email: user.emailAddresses[0]?.emailAddress || `user-${userId.slice(0, 8)}@gimmi.app`,
+      name: user.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : "Platform Admin",
       platformRole: "SUPER_ADMIN"
     }
   });
@@ -38,7 +42,8 @@ export async function createGymAction(formData: FormData) {
   // 2. Check if slug is already taken
   const existing = await prisma.gym.findUnique({ where: { slug: cleanSlug } });
   if (existing) {
-    throw new Error(`The web address "${cleanSlug}" is already taken. Try a different one.`);
+    // Slug taken — redirect back (ideally with an error query param)
+    redirect("/admin?error=slug_taken");
   }
 
   // 3. Create the Gym and associate the user as OWNER
@@ -62,10 +67,10 @@ export async function createGymAction(formData: FormData) {
 
 export async function deleteGymAction(formData: FormData) {
   const { userId } = await auth();
-  if (!userId) throw new Error("Unauthorized");
+  if (!userId) redirect("/sign-in");
 
   const gymId = formData.get("gymId") as string;
-  if (!gymId) throw new Error("Gym ID is required.");
+  if (!gymId) redirect("/admin");
 
   // Ensure current user is the actual OWNER of this gym
   const membership = await prisma.gymMember.findUnique({
@@ -73,22 +78,19 @@ export async function deleteGymAction(formData: FormData) {
   });
 
   if (!membership || membership.role !== "OWNER") {
-    throw new Error("Only the owner can delete this gym.");
+    redirect("/admin");
   }
 
-  // 1. Delete all related check-in records
+  // Delete all related records in correct order
   await prisma.attendance.deleteMany({ where: { gymId } });
-
-  // 2. Delete all gym announcements
+  await prisma.story.deleteMany({ where: { gymId } });
+  await prisma.joinRequest.deleteMany({ where: { gymId } });
   await prisma.announcement.deleteMany({ where: { gymId } });
-
-  // 3. Delete all membership plans
-  await prisma.membershipPlan.deleteMany({ where: { gymId } });
-
-  // 4. Delete all gym members
   await prisma.gymMember.deleteMany({ where: { gymId } });
+  await prisma.membershipPlan.deleteMany({ where: { gymId } });
+  await prisma.trainerVerificationRequest.deleteMany({ where: { gymId } });
 
-  // 5. Finally, delete the Gym itself
+  // Finally, delete the Gym itself
   await prisma.gym.delete({
     where: { id: gymId }
   });
