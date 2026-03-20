@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { pusherClient } from "@/lib/pusher-client";
+import { getPusherClient } from "@/lib/pusher-client";
 import { User, Clock, CheckCircle2, Zap } from "lucide-react";
 
 interface EntryLog {
@@ -15,14 +15,17 @@ export default function LiveAttendanceFeed({ gymId }: { gymId: string }) {
   const [logs, setLogs] = useState<EntryLog[]>([]);
 
   useEffect(() => {
-    const channel = pusherClient.subscribe(`gym-${gymId}`);
+    const client = getPusherClient();
+    if (!client) return;
+
+    const channel = client.subscribe(`gym-${gymId}`);
     
     channel.bind("entry-log", (data: EntryLog) => {
       setLogs((prev) => [data, ...prev].slice(0, 10)); // Keep last 10
     });
 
     return () => {
-      pusherClient.unsubscribe(`gym-${gymId}`);
+      client.unsubscribe(`gym-${gymId}`);
     };
   }, [gymId]);
 

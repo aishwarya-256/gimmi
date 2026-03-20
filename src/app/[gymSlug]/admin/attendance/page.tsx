@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { CheckCircle, XCircle, Printer, QrCode, MapPin } from "lucide-react";
 import QRCode from "react-qr-code";
 import { getDailyAttendance, getGymIdBySlug } from "../actions";
-import { pusherClient } from "@/lib/pusher-client";
+import { getPusherClient } from "@/lib/pusher-client";
 
 type AttendanceRecord = {
   id: string;
@@ -39,7 +39,10 @@ export default function QRScannerPage({ params }: { params: Promise<{ gymSlug: s
   useEffect(() => {
     if (!gymId) return;
 
-    const channel = pusherClient.subscribe(`gym-${gymId}`);
+    const client = getPusherClient();
+    if (!client) return;
+
+    const channel = client.subscribe(`gym-${gymId}`);
 
     channel.bind("entry-log", (data: { userName: string; userEmail: string; planName: string; timestamp: string }) => {
       const newRecord: AttendanceRecord = {
@@ -56,7 +59,7 @@ export default function QRScannerPage({ params }: { params: Promise<{ gymSlug: s
 
     return () => {
       channel.unbind_all();
-      pusherClient.unsubscribe(`gym-${gymId}`);
+      client.unsubscribe(`gym-${gymId}`);
     };
   }, [gymId]);
 
