@@ -3,7 +3,6 @@
 import { auth } from "@clerk/nextjs/server";
 import { PrismaClient } from "@prisma/client";
 import { notFound, redirect } from "next/navigation";
-import jwt from "jsonwebtoken";
 
 const prisma = new PrismaClient();
 const QR_SECRET = process.env.CLERK_SECRET_KEY || "gimmi-qr-secret-fallback";
@@ -78,18 +77,6 @@ export async function getMemberDashboard(gymSlug: string) {
   };
 }
 
-// Generate a short-lived signed QR token for attendance
-export async function generateQRToken(gymSlug: string) {
-  const { gym, userId } = await verifyActiveMember(gymSlug);
-
-  const token = jwt.sign(
-    { userId, gymId: gym.id, gymSlug, type: "attendance" },
-    QR_SECRET,
-    { expiresIn: "30s" }
-  );
-
-  return token;
-}
 
 // Get member's attendance history
 export async function getAttendanceHistory(gymSlug: string) {
@@ -130,11 +117,20 @@ export async function verifyGymEntryAction(gymSlug: string, token: string) {
 
   // 3. Verify Token
   try {
-    const secret = gym.qrSecret || process.env.CLERK_SECRET_KEY || "fallback";
-    const decoded = jwt.verify(token, secret) as any;
+    let secretToCheck = token;
+    
+    // If the scanned token is a URL (the desk poster), extract the "t" param
+    if (token.includes("check-in?t=")) {
+      try {
+        const url = new URL(token);
+        secretToCheck = url.searchParams.get("t") || token;
+      } catch (e) {
+        // Fallback to raw token if URL parsing fails
+      }
+    }
 
-    if (decoded.gymId !== gym.id || decoded.type !== "STATIONARY_ENTRY") {
-      return { success: false, message: "Invalid or mismatched QR code" };
+    if (!gym.qrSecret || gym.qrSecret !== secretToCheck) {
+      return { success: false, message: "Invalid or expired QR code. Please scan the latest desk poster." };
     }
 
     // 4. Mark Attendance

@@ -6,19 +6,25 @@ import Link from "next/link";
 
 const prisma = new PrismaClient();
 
-export default async function CheckInPage(props: { params: Promise<{ gymSlug: string }> }) {
+export default async function CheckInPage(props: { params: Promise<{ gymSlug: string }>; searchParams: Promise<{ t?: string }> }) {
   const { gymSlug } = await props.params;
+  const { t: token } = await props.searchParams;
   const { userId } = await auth();
 
   // If they aren't logged in, redirect them to sign-in securely, and then drop them right back here to check-in!
   if (!userId) {
-    redirect(`/sign-in?redirect_url=/${gymSlug}/check-in`);
+    redirect(`/sign-in?redirect_url=/${gymSlug}/check-in${token ? `?t=${token}` : ""}`);
   }
 
   // 1. Validate Gym exists
   const gym = await prisma.gym.findUnique({ where: { slug: gymSlug } });
   if (!gym) {
     return <StatusView status="error" message="This gym does not exist on the Gimmi network." />;
+  }
+
+  // 1.5 Validate Secure Static QR Token
+  if (!token || gym.qrSecret !== token) {
+    return <StatusView status="error" message="Invalid or Expired QR Code" subtext="Please scan the latest poster at the front desk." actionLink={`/${gymSlug}`} actionText="Return Home" />;
   }
 
   // 2. Validate JoinRequest is ACCEPTED

@@ -51,7 +51,6 @@ export default async function MemberLayout({
   const navItems = [
     { label: "Home", href: `/${gymSlug}`, icon: LayoutDashboard },
     { label: "Scan", href: `/${gymSlug}/scan`, icon: Camera },
-    { label: "QR Pass", href: `/${gymSlug}/qr`, icon: QrCode },
     { label: "Visits", href: `/${gymSlug}/attendance`, icon: History },
     { label: "News", href: `/${gymSlug}/announcements`, icon: Megaphone },
   ];

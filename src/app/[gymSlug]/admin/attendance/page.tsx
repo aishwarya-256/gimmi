@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { CheckCircle, XCircle, Printer, QrCode, MapPin } from "lucide-react";
 import QRCode from "react-qr-code";
-import { getDailyAttendance, getGymIdBySlug } from "../actions";
+import { getDailyAttendance, getGymIdBySlug, getGymQrSecret, rotateGymQrSecretAction } from "../actions";
 import { getPusherClient } from "@/lib/pusher-client";
 
 type AttendanceRecord = {
@@ -19,18 +19,22 @@ type AttendanceRecord = {
 export default function QRScannerPage({ params }: { params: Promise<{ gymSlug: string }> }) {
   const [gymSlug, setGymSlug] = useState("");
   const [gymId, setGymId] = useState("");
+  const [qrSecret, setQrSecret] = useState("");
+  const [isRotating, setIsRotating] = useState(false);
   const [origin, setOrigin] = useState("");
   const [attendances, setAttendances] = useState<AttendanceRecord[]>([]);
 
   useEffect(() => {
     params.then(async (p) => {
       setGymSlug(p.gymSlug);
-      const [data, id] = await Promise.all([
+      const [data, id, secret] = await Promise.all([
         getDailyAttendance(p.gymSlug),
         getGymIdBySlug(p.gymSlug),
+        getGymQrSecret(p.gymSlug)
       ]);
       setAttendances(data as AttendanceRecord[]);
       if (id) setGymId(id);
+      if (secret) setQrSecret(secret);
     });
     setOrigin(window.location.origin);
   }, [params]);
@@ -63,7 +67,16 @@ export default function QRScannerPage({ params }: { params: Promise<{ gymSlug: s
     };
   }, [gymId]);
 
-  const checkInUrl = `${origin}/${gymSlug}/check-in`;
+  const handleRotate = async () => {
+    if (confirm("Are you sure? Old desk posters will stop working immediately.")) {
+      setIsRotating(true);
+      const newSecret = await rotateGymQrSecretAction(gymSlug);
+      setQrSecret(newSecret);
+      setIsRotating(false);
+    }
+  };
+
+  const checkInUrl = `${origin}/${gymSlug}/check-in?t=${qrSecret}`;
 
   return (
     <div className="space-y-8 pb-12">
@@ -103,13 +116,23 @@ export default function QRScannerPage({ params }: { params: Promise<{ gymSlug: s
             Members simply open their native phone camera, scan this code, and their attendance is instantly verified and logged.
           </p>
 
-          <button 
-            onClick={() => window.print()}
-            className="w-full sm:w-auto px-8 py-4 bg-white text-black font-bold rounded-xl hover:bg-gray-200 transition-all flex items-center justify-center gap-3 shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:scale-105 active:scale-95"
-          >
-            <Printer size={18} />
-            Print Desk Poster
-          </button>
+          <div className="flex flex-col sm:flex-row gap-4 w-full justify-center">
+            <button 
+              onClick={() => window.print()}
+              className="px-8 py-3 bg-white text-black font-bold rounded-xl hover:bg-gray-200 transition-all flex items-center justify-center gap-3 shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:scale-105 active:scale-95"
+            >
+              <Printer size={18} />
+              Print Desk Poster
+            </button>
+            <button 
+              onClick={handleRotate}
+              disabled={isRotating}
+              className="px-6 py-3 bg-red-500/10 text-red-500 border border-red-500/20 font-bold rounded-xl hover:bg-red-500/20 transition-all flex items-center justify-center gap-2 hover:scale-105 active:scale-95 disabled:opacity-50"
+            >
+              <QrCode size={18} />
+              {isRotating ? "Rotating..." : "Rotate QR"}
+            </button>
+          </div>
         </div>
 
         {/* Daily Attendance Sheet — LIVE via Pusher */}

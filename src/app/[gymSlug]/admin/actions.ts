@@ -207,21 +207,25 @@ export async function handleJoinRequestAction(requestId: string, action: "ACCEPT
   revalidatePath(`/${request.gym.slug}/admin/requests`);
 }
 
-export async function generateGymEntryTokenAction(gymSlug: string) {
+// Get the static QR secret for the Check-In Desk Poster
+export async function getGymQrSecret(gymSlug: string) {
   const { gym } = await verifyGymAdmin(gymSlug);
-  
-  const tokenPayload = {
-    gymId: gym.id,
-    gymSlug: gym.slug,
-    timestamp: Date.now(),
-    type: "STATIONARY_ENTRY"
-  };
+  return gym.qrSecret;
+}
 
-  const secret = gym.qrSecret || process.env.CLERK_SECRET_KEY || "fallback";
+// Rotate the static QR secret to invalidate old printed codes
+export async function rotateGymQrSecretAction(gymSlug: string) {
+  const { gym } = await verifyGymAdmin(gymSlug);
+  const { randomUUID } = await import("crypto");
   
-  const token = jwt.sign(tokenPayload, secret, { expiresIn: "30s" });
+  const newSecret = randomUUID();
+  await prisma.gym.update({
+    where: { id: gym.id },
+    data: { qrSecret: newSecret }
+  });
   
-  return token;
+  revalidatePath(`/${gymSlug}/admin/attendance`);
+  return newSecret;
 }
 
 // Get gym ID by slug (for Pusher channel subscription)
