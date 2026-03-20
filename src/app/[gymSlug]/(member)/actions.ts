@@ -113,7 +113,7 @@ export async function verifyGymEntryAction(gymSlug: string, token: string) {
     (joinRequest);
 
   if (!hasAccess) {
-    return { success: false, message: "Access Denied: You do not have an active membership here." };
+    return { success: false, message: `Access Denied: Not an active member or owner. (Role: ${member?.role}, Status: ${member?.status}, Join: ${(joinRequest as any)?.status})` };
   }
 
   // 3. Verify Token
@@ -130,8 +130,11 @@ export async function verifyGymEntryAction(gymSlug: string, token: string) {
       }
     }
 
-    if (!gym.qrSecret || gym.qrSecret !== secretToCheck) {
-      return { success: false, message: "Invalid or expired QR code. Please scan the latest desk poster." };
+    if (!gym.qrSecret) {
+      return { success: false, message: "Debug: Gym has no qrSecret set." };
+    }
+    if (gym.qrSecret !== secretToCheck) {
+      return { success: false, message: `Debug Mismatch: DB[${gym.qrSecret.slice(0,5)}...] != Scan[${secretToCheck.slice(0,5)}...]` };
     }
 
     // 4. Mark Attendance
@@ -160,7 +163,8 @@ export async function verifyGymEntryAction(gymSlug: string, token: string) {
     }
 
     return { success: true, message: `Welcome to ${gym.name}!` };
-  } catch (err) {
-    return { success: false, message: "QR code expired or invalid" };
+  } catch (err: any) {
+    console.error("verifyGymEntryAction error:", err);
+    return { success: false, message: `System Error: ${err.message}` };
   }
 }
