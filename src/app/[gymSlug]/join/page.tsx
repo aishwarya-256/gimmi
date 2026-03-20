@@ -72,7 +72,7 @@ export default async function JoinGymPage(props: { params: Promise<{ gymSlug: st
 
           {gym.plans.length === 0 ? (
             <div className="text-center p-8 bg-white/5 rounded-2xl border border-white/10 max-w-md mx-auto">
-              <p className="text-gray-400 font-medium">This gym hasn't set up any membership plans yet.</p>
+              <p className="text-gray-400 font-medium">This gym hasn&apos;t set up any membership plans yet.</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { CheckCircle, XCircle, Printer, QrCode, MapPin } from "lucide-react";
 import QRCode from "react-qr-code";
+import { getDailyAttendance } from "../actions";
 
 type ScanResult = {
   id: string;
@@ -19,9 +20,13 @@ type ScanResult = {
 export default function QRScannerPage({ params }: { params: Promise<{ gymSlug: string }> }) {
   const [gymSlug, setGymSlug] = useState("");
   const [origin, setOrigin] = useState("");
+  const [attendances, setAttendances] = useState<any[]>([]);
 
   useEffect(() => {
-    params.then((p) => setGymSlug(p.gymSlug));
+    params.then((p) => {
+      setGymSlug(p.gymSlug);
+      getDailyAttendance(p.gymSlug).then((data) => setAttendances(data));
+    });
     setOrigin(window.location.origin);
   }, [params]);
 
@@ -74,51 +79,50 @@ export default function QRScannerPage({ params }: { params: Promise<{ gymSlug: s
           </button>
         </div>
 
-        {/* Live Attendance Instructions / Feed Placeholder */}
-        <div className="bg-white/[0.03] border border-white/[0.06] rounded-3xl p-8 flex flex-col justify-center relative overflow-hidden">
+        {/* Daily Attendance Sheet */}
+        <div className="bg-white/[0.03] border border-white/[0.06] rounded-3xl p-8 flex flex-col relative overflow-hidden max-h-[600px] h-[600px]">
           <div className="absolute bottom-0 left-0 w-64 h-64 bg-emerald-500/5 rounded-full blur-[80px] -z-10"></div>
           
-          <div className="p-4 rounded-2xl bg-black/40 border border-white/[0.04] mb-8">
-            <div className="flex items-center gap-4 mb-4">
-              <div className="p-3 bg-emerald-500/10 rounded-xl">
-                <MapPin className="text-emerald-400" size={24} />
-              </div>
-              <div>
-                <h3 className="text-white font-bold">100% Contactless</h3>
-                <p className="text-xs text-gray-500">No hardware scanners needed.</p>
-              </div>
-            </div>
-            <ul className="space-y-3 text-sm text-gray-400 ml-1">
-              <li className="flex items-start gap-2">
-                <CheckCircle size={16} className="text-emerald-500 shrink-0 mt-0.5" /> 
-                Members scan the poster with their personal iPhone or Android camera.
-              </li>
-              <li className="flex items-start gap-2">
-                <CheckCircle size={16} className="text-emerald-500 shrink-0 mt-0.5" /> 
-                They click the link, and their active subscription is securely verified.
-              </li>
-              <li className="flex items-start gap-2">
-                <CheckCircle size={16} className="text-emerald-500 shrink-0 mt-0.5" /> 
-                A big green checkmark pops up on their screen showing "Access Granted".
-              </li>
-            </ul>
+          <div className="flex items-center justify-between mb-6 shrink-0">
+            <h3 className="text-xl font-bold text-white">Daily Attendance Sheet</h3>
+            <span className="px-3 py-1 bg-white/5 text-gray-400 text-xs rounded-full">{attendances.length} today</span>
           </div>
 
-          <div className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/10 opacity-60 grayscale blur-[1px]">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gray-600 rounded-full"></div>
-              <div>
-                <h4 className="text-sm font-bold text-white">Alex Johnson</h4>
-                <p className="text-xs text-gray-400">Checked in just now</p>
+          <div className="flex-1 overflow-y-auto space-y-3 pr-2 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
+            {attendances.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full text-gray-500 text-sm">
+                <QrCode className="mb-2 opacity-30" size={32} />
+                No one has checked in today yet.
               </div>
-            </div>
-            <div className="px-3 py-1 bg-emerald-500/20 text-emerald-400 text-xs font-bold rounded-lg">
-              SUCCESS
-            </div>
+            ) : (
+              attendances.map((record) => (
+                <div key={record.id} className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/10 hover:bg-white/10 transition-colors cursor-default">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-violet-500 rounded-full flex items-center justify-center text-white font-bold opacity-90 shadow-[0_0_15px_rgba(99,102,241,0.3)]">
+                      {record.user.name.charAt(0)}
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-white">{record.user.name}</h4>
+                      <p className="text-xs text-gray-400">{new Date(record.entryTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                    </div>
+                  </div>
+                  <div className={`px-3 py-1 text-xs font-bold rounded-lg ${
+                    record.status === 'SUCCESS' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/20' : 
+                    'bg-red-500/20 text-red-400 border border-red-500/20'
+                  }`}>
+                    {record.status}
+                  </div>
+                </div>
+              ))
+            )}
           </div>
-          <p className="text-center text-xs text-indigo-400 font-semibold tracking-widest uppercase mt-4">
-            Live Check-in Feed Active
-          </p>
+          
+          <div className="pt-4 mt-2 shrink-0 border-t border-white/5">
+            <p className="text-center text-xs text-emerald-400 font-semibold tracking-widest uppercase opacity-80 flex items-center justify-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              Live Feed Active
+            </p>
+          </div>
         </div>
 
       </div>

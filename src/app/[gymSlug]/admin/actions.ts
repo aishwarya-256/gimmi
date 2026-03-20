@@ -116,3 +116,28 @@ export async function deleteAnnouncementAction(gymSlug: string, announcementId: 
     where: { id: announcementId, gymId: gym.id }
   });
 }
+
+// Get daily attendance sheet
+export async function getDailyAttendance(gymSlug: string) {
+  const { gym } = await verifyGymAdmin(gymSlug);
+  
+  const startOfDay = new Date();
+  startOfDay.setHours(0, 0, 0, 0);
+
+  return prisma.attendance.findMany({
+    where: {
+      gymId: gym.id,
+      entryTime: { gte: startOfDay }
+    },
+    include: {
+      user: {
+        select: {
+          name: true,
+          email: true,
+        }
+      }
+    },
+    orderBy: { entryTime: "desc" }
+  });
+} 
+

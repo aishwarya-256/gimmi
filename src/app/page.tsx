@@ -10,9 +10,11 @@ export default function LandingPage() {
       {/* Hero Section */}
       <section className="relative w-full max-w-7xl mx-auto px-6 pt-32 pb-40 flex flex-col items-center text-center">
         {/* Glowing Ambient Background Orbs */}
-        <div className="absolute top-20 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-indigo-600/20 rounded-full blur-[120px] -z-10 animate-pulse"></div>
-        <div className="absolute top-40 left-1/4 w-[400px] h-[400px] bg-violet-600/10 rounded-full blur-[100px] -z-10"></div>
-        <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-fuchsia-600/10 rounded-full blur-[120px] -z-10"></div>
+        <div className="absolute inset-0 overflow-hidden pointer-events-none -z-10">
+          <div className="absolute top-20 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-indigo-600/20 rounded-full blur-[120px] animate-pulse"></div>
+          <div className="absolute top-40 left-1/4 w-[400px] h-[400px] bg-violet-600/10 rounded-full blur-[100px]"></div>
+          <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-fuchsia-600/10 rounded-full blur-[120px]"></div>
+        </div>
 
         {/* Top Product Badge */}
         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/[0.03] border border-white/10 text-gray-300 text-sm font-medium mb-8 backdrop-blur-md hover:bg-white/[0.08] transition-all cursor-pointer group shadow-2xl">
@@ -22,37 +24,38 @@ export default function LandingPage() {
         </div>
         
         {/* Headline */}
-        <h1 className="text-6xl md:text-8xl font-black tracking-tighter text-white leading-[1.05] max-w-5xl">
+        <h1 className="text-4xl sm:text-6xl md:text-8xl font-black tracking-tighter text-white leading-[1.1] sm:leading-[1.05] max-w-5xl px-2 break-words">
           The fitness platform <br className="hidden md:block" />
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-violet-400 to-fuchsia-400">
             built for the future.
           </span>
         </h1>
         
-        <p className="text-lg md:text-xl text-gray-400 max-w-2xl mt-8 leading-relaxed font-light">
+        <p className="text-base sm:text-lg md:text-xl text-gray-400 max-w-2xl mt-6 md:mt-8 leading-relaxed font-light px-4">
           Manage memberships, engage private communities with 24-hr stories, and secure entry via cryptographic QR passes. The ultimate Gym OS is here.
         </p>
         
         {/* CTAs */}
-        <div className="flex flex-col sm:flex-row shadow-[0_0_40px_rgba(255,255,255,0.05)] items-center gap-5 mt-12 bg-white/[0.03] p-2 rounded-full border border-white/10">
+        <div className="flex flex-col sm:flex-row shadow-[0_0_40px_rgba(255,255,255,0.05)] items-center gap-3 sm:gap-5 mt-10 md:mt-12 bg-white/[0.03] p-2 rounded-3xl sm:rounded-full border border-white/10 w-full sm:w-auto">
           <Show when="signed-in">
-            <Link href="/customer" className="px-8 py-4 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold rounded-full hover:scale-105 transition-all flex items-center gap-2 group shadow-[0_0_20px_rgba(16,185,129,0.2)]">
+            <Link href="/customer" className="w-full sm:w-auto justify-center px-8 py-4 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold rounded-2xl sm:rounded-full hover:scale-105 transition-all flex items-center gap-2 group shadow-[0_0_20px_rgba(16,185,129,0.2)]">
               Open Customer App <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </Link>
           </Show>
           <Show when="signed-out">
-            <div className="px-8 py-4 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold rounded-full hover:scale-105 transition-all flex items-center gap-2 group shadow-[0_0_20px_rgba(16,185,129,0.2)] cursor-pointer">
-              <SignUpButton mode="modal" fallbackRedirectUrl="/customer">Member Sign Up</SignUpButton>
-              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-            </div>
+            <SignUpButton mode="modal" forceRedirectUrl="/customer">
+              <button className="w-full sm:w-auto justify-center px-8 py-4 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold rounded-2xl sm:rounded-full hover:scale-105 transition-all flex items-center gap-2 group shadow-[0_0_20px_rgba(16,185,129,0.2)] cursor-pointer">
+                Member Sign Up <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              </button>
+            </SignUpButton>
           </Show>
-          <Link href="/admin" className="px-8 py-4 bg-transparent text-gray-300 font-bold rounded-full hover:bg-white/5 transition-all flex items-center gap-2">
+          <Link href="/admin" className="w-full sm:w-auto justify-center px-8 py-4 bg-transparent text-gray-300 font-bold rounded-2xl sm:rounded-full hover:bg-white/5 transition-all flex items-center gap-2">
             Gym Owner Login
           </Link>
         </div>
 
         {/* Dashboard Preview Wireframe Mockup (Linear Aesthetic) */}
-        <div className="mt-24 w-full max-w-5xl relative group perspective-1000">
+        <div className="mt-16 md:mt-24 w-full max-w-5xl relative group perspective-1000 hidden sm:block">
           <div className="absolute inset-x-0 -bottom-32 h-64 bg-gradient-to-t from-[#0a0a0a] to-transparent z-10"></div>
           <div className="w-full h-[500px] border border-white/10 rounded-2xl bg-[#0f0f11] shadow-2xl overflow-hidden relative transform group-hover:-translate-y-2 transition-transform duration-700">
             {/* Fake OS Header */}
@@ -93,7 +96,7 @@ export default function LandingPage() {
       {/* Interactive Features Grid */}
       <section id="features" className="w-full max-w-7xl mx-auto px-6 py-32 grid grid-cols-1 md:grid-cols-2 gap-8 relative">
         <div className="col-span-1 md:col-span-2 text-center mb-16">
-          <h2 className="text-3xl md:text-5xl font-bold text-white mb-6 tracking-tight">Everything you need. <span className="text-white/30">Nothing you don't.</span></h2>
+          <h2 className="text-3xl md:text-5xl font-bold text-white mb-6 tracking-tight">Everything you need. <span className="text-white/30">Nothing you don&apos;t.</span></h2>
         </div>
 
         <FeatureCard 

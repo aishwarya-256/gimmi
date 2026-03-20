@@ -1,7 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, CheckCircle2, Building2, CreditCard, Users, QrCode } from "lucide-react";
+import { ArrowLeft, ArrowRight, Building2, CreditCard, Users, QrCode } from "lucide-react";
 
 export default async function QuickSetupGuide() {
   const { userId } = await auth();
