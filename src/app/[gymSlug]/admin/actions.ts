@@ -223,3 +223,9 @@ export async function generateGymEntryTokenAction(gymSlug: string) {
   
   return token;
 }
+
+// Get gym ID by slug (for Pusher channel subscription)
+export async function getGymIdBySlug(gymSlug: string) {
+  const { gym } = await verifyGymAdmin(gymSlug);
+  return gym.id;
+}

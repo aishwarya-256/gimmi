@@ -2,7 +2,10 @@ import { auth } from "@clerk/nextjs/server";
 import { UserButton } from "@clerk/nextjs";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { Activity, LayoutDashboard, QrCode, History, Megaphone } from "lucide-react";
+import { Activity, LayoutDashboard, QrCode, History, Megaphone, Camera } from "lucide-react";
+import { PrismaClient } from "@prisma/client";
+
+const prisma = new PrismaClient();
 
 export default async function MemberLayout({
   children,
@@ -18,8 +21,33 @@ export default async function MemberLayout({
     redirect("/sign-in");
   }
 
+  // --- Access Control: ensure the user has an ACCEPTED JoinRequest ---
+  const gym = await prisma.gym.findUnique({ where: { slug: gymSlug.toLowerCase() } });
+
+  if (!gym) {
+    redirect("/customer");
+  }
+
+  // Allow gym owners/managers through without a join request
+  const adminMember = await prisma.gymMember.findUnique({
+    where: { userId_gymId: { userId, gymId: gym.id } },
+  });
+
+  const isAdmin = adminMember && (adminMember.role === "OWNER" || adminMember.role === "MANAGER");
+
+  if (!isAdmin) {
+    const joinRequest = await prisma.joinRequest.findUnique({
+      where: { userId_gymId: { userId, gymId: gym.id } },
+    });
+
+    if (!joinRequest || joinRequest.status !== "ACCEPTED") {
+      redirect(`/${gymSlug}/join`);
+    }
+  }
+
   const navItems = [
     { label: "Home", href: `/${gymSlug}`, icon: LayoutDashboard },
+    { label: "Scan", href: `/${gymSlug}/scan`, icon: Camera },
     { label: "QR Pass", href: `/${gymSlug}/qr`, icon: QrCode },
     { label: "Visits", href: `/${gymSlug}/attendance`, icon: History },
     { label: "News", href: `/${gymSlug}/announcements`, icon: Megaphone },
@@ -52,18 +80,18 @@ export default async function MemberLayout({
       </main>
 
       {/* Bottom Navigation Bar */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-black/90 backdrop-blur-2xl border-t border-white/[0.08] px-6 py-2 pb-safe shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
-        <div className="flex items-center justify-between max-w-lg mx-auto">
+      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-black/90 backdrop-blur-2xl border-t border-white/[0.08] px-4 py-2 pb-safe shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
+        <div className="flex items-center justify-around max-w-lg mx-auto">
           {navItems.map((item) => (
             <Link
               key={item.href}
               href={item.href}
-              className="flex flex-col items-center gap-1 text-gray-500 hover:text-emerald-400 transition-colors group px-2 py-1"
+              className="flex flex-col items-center gap-1 text-gray-500 hover:text-emerald-400 transition-colors group px-1.5 py-1"
             >
               <div className="p-1.5 rounded-xl group-hover:bg-emerald-500/10 transition-colors relative">
-                <item.icon size={22} className="group-hover:scale-110 transition-transform" />
+                <item.icon size={20} className="group-hover:scale-110 transition-transform" />
               </div>
-              <span className="text-[10px] font-bold tracking-wide">{item.label}</span>
+              <span className="text-[9px] font-bold tracking-wide">{item.label}</span>
             </Link>
           ))}
         </div>

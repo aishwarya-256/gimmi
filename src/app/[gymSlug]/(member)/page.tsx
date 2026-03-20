@@ -1,5 +1,5 @@
 import { getMemberDashboard } from "./actions";
-import { CreditCard, CalendarCheck, Activity, Megaphone, Phone, MessageCircle, Mail, MapPin, Building2, ShieldCheck } from "lucide-react";
+import { CreditCard, CalendarCheck, Activity, Megaphone, Phone, MessageCircle, Mail, MapPin, Building2, ShieldCheck, Camera } from "lucide-react";
 import Link from "next/link";
 
 export default async function MemberDashboard(props: { params: Promise<{ gymSlug: string }> }) {
@@ -14,6 +14,24 @@ export default async function MemberDashboard(props: { params: Promise<{ gymSlug
         <h1 className="text-3xl font-black text-white tracking-tight">Welcome back 👋</h1>
         <p className="text-gray-400 mt-2">Here&apos;s your membership overview at <span className="text-emerald-400 font-semibold">{data.gym.name}</span></p>
       </div>
+
+      {/* Scan QR Entry Button — only for active members */}
+      {data.membership.status === "ACTIVE" && (
+        <Link
+          href={`/${gymSlug}/scan`}
+          className="group relative flex items-center gap-5 p-6 rounded-3xl bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-emerald-500/5 border border-emerald-500/20 hover:border-emerald-400/50 transition-all duration-300 hover:-translate-y-1 overflow-hidden"
+        >
+          <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
+          <div className="relative z-10 w-14 h-14 rounded-2xl bg-emerald-500 flex items-center justify-center shadow-lg shadow-emerald-500/30 group-hover:scale-110 transition-transform duration-300">
+            <Camera size={24} className="text-black" />
+          </div>
+          <div className="relative z-10 flex-1">
+            <h3 className="text-lg font-bold text-white group-hover:text-emerald-400 transition-colors">Scan Gym QR</h3>
+            <p className="text-xs text-gray-500 mt-0.5">Point your camera at the desk QR code to check in</p>
+          </div>
+          <div className="relative z-10 text-emerald-500/50 group-hover:text-emerald-400 transition-colors text-2xl font-light">→</div>
+        </Link>
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

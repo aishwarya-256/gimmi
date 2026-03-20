@@ -3,32 +3,62 @@
 import { useState, useEffect } from "react";
 import { CheckCircle, XCircle, Printer, QrCode, MapPin } from "lucide-react";
 import QRCode from "react-qr-code";
-import { getDailyAttendance } from "../actions";
+import { getDailyAttendance, getGymIdBySlug } from "../actions";
+import { pusherClient } from "@/lib/pusher-client";
 
-type ScanResult = {
+type AttendanceRecord = {
   id: string;
   status: string;
-  method: string;
-  entryTime: string;
+  entryTime: Date | string;
   user: {
-    firstName: string;
-    lastName: string;
-    emailAddresses: { emailAddress: string }[];
-  } | null;
+    name: string;
+    email: string;
+  };
 };
 
 export default function QRScannerPage({ params }: { params: Promise<{ gymSlug: string }> }) {
   const [gymSlug, setGymSlug] = useState("");
+  const [gymId, setGymId] = useState("");
   const [origin, setOrigin] = useState("");
-  const [attendances, setAttendances] = useState<any[]>([]);
+  const [attendances, setAttendances] = useState<AttendanceRecord[]>([]);
 
   useEffect(() => {
-    params.then((p) => {
+    params.then(async (p) => {
       setGymSlug(p.gymSlug);
-      getDailyAttendance(p.gymSlug).then((data) => setAttendances(data));
+      const [data, id] = await Promise.all([
+        getDailyAttendance(p.gymSlug),
+        getGymIdBySlug(p.gymSlug),
+      ]);
+      setAttendances(data as AttendanceRecord[]);
+      if (id) setGymId(id);
     });
     setOrigin(window.location.origin);
   }, [params]);
+
+  // --- Pusher real-time subscription ---
+  useEffect(() => {
+    if (!gymId) return;
+
+    const channel = pusherClient.subscribe(`gym-${gymId}`);
+
+    channel.bind("entry-log", (data: { userName: string; userEmail: string; planName: string; timestamp: string }) => {
+      const newRecord: AttendanceRecord = {
+        id: `live-${Date.now()}`,
+        status: "SUCCESS",
+        entryTime: data.timestamp,
+        user: {
+          name: data.userName,
+          email: data.userEmail || "",
+        },
+      };
+      setAttendances((prev) => [newRecord, ...prev]);
+    });
+
+    return () => {
+      channel.unbind_all();
+      pusherClient.unsubscribe(`gym-${gymId}`);
+    };
+  }, [gymId]);
 
   const checkInUrl = `${origin}/${gymSlug}/check-in`;
 
@@ -42,31 +72,31 @@ export default function QRScannerPage({ params }: { params: Promise<{ gymSlug: s
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         
         {/* Printable Poster Section */}
-        <div className="bg-white/[0.03] border border-white/[0.06] rounded-3xl p-8 flex flex-col items-center text-center relative overflow-hidden group">
+        <div className="bg-white/[0.03] border border-white/[0.06] rounded-3xl p-6 sm:p-8 flex flex-col items-center text-center relative overflow-hidden group">
           <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-[80px] -z-10 group-hover:bg-indigo-500/20 transition-all duration-700"></div>
           
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-bold uppercase tracking-widest mb-8">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-bold uppercase tracking-widest mb-6 sm:mb-8">
             <QrCode size={14} /> Official Gimmi Check-In
           </div>
 
-          <div className="bg-white p-6 rounded-3xl shadow-2xl ring-4 ring-white/10 mb-8 transform group-hover:scale-105 transition-transform duration-500">
+          <div className="bg-white p-4 sm:p-6 rounded-3xl shadow-2xl ring-4 ring-white/10 mb-6 sm:mb-8 transform group-hover:scale-105 transition-transform duration-500">
             {gymSlug && origin ? (
               <QRCode 
                 value={checkInUrl}
-                size={220}
+                size={200}
                 level="H"
                 fgColor="#0a0a0a"
                 bgColor="#ffffff"
               />
             ) : (
-              <div className="w-[220px] h-[220px] bg-gray-100 rounded-xl animate-pulse flex items-center justify-center">
+              <div className="w-[200px] h-[200px] bg-gray-100 rounded-xl animate-pulse flex items-center justify-center">
                 <QrCode className="text-gray-300 w-12 h-12" />
               </div>
             )}
           </div>
 
           <h2 className="text-2xl font-black text-white mb-2 tracking-tight">Scan to Enter</h2>
-          <p className="text-gray-400 text-sm max-w-xs leading-relaxed mb-8">
+          <p className="text-gray-400 text-sm max-w-xs leading-relaxed mb-6 sm:mb-8">
             Members simply open their native phone camera, scan this code, and their attendance is instantly verified and logged.
           </p>
 
@@ -79,8 +109,8 @@ export default function QRScannerPage({ params }: { params: Promise<{ gymSlug: s
           </button>
         </div>
 
-        {/* Daily Attendance Sheet */}
-        <div className="bg-white/[0.03] border border-white/[0.06] rounded-3xl p-8 flex flex-col relative overflow-hidden max-h-[600px] h-[600px]">
+        {/* Daily Attendance Sheet — LIVE via Pusher */}
+        <div className="bg-white/[0.03] border border-white/[0.06] rounded-3xl p-6 sm:p-8 flex flex-col relative overflow-hidden max-h-[600px] h-[600px]">
           <div className="absolute bottom-0 left-0 w-64 h-64 bg-emerald-500/5 rounded-full blur-[80px] -z-10"></div>
           
           <div className="flex items-center justify-between mb-6 shrink-0">
@@ -96,7 +126,7 @@ export default function QRScannerPage({ params }: { params: Promise<{ gymSlug: s
               </div>
             ) : (
               attendances.map((record) => (
-                <div key={record.id} className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/10 hover:bg-white/10 transition-colors cursor-default">
+                <div key={record.id} className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/10 hover:bg-white/10 transition-colors cursor-default animate-in fade-in slide-in-from-top-2 duration-300">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-violet-500 rounded-full flex items-center justify-center text-white font-bold opacity-90 shadow-[0_0_15px_rgba(99,102,241,0.3)]">
                       {record.user.name.charAt(0)}
@@ -120,7 +150,7 @@ export default function QRScannerPage({ params }: { params: Promise<{ gymSlug: s
           <div className="pt-4 mt-2 shrink-0 border-t border-white/5">
             <p className="text-center text-xs text-emerald-400 font-semibold tracking-widest uppercase opacity-80 flex items-center justify-center gap-2">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-              Live Feed Active
+              Live Feed Active {gymId ? "• Connected" : "• Connecting..."}
             </p>
           </div>
         </div>

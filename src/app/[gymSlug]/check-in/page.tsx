@@ -21,7 +21,24 @@ export default async function CheckInPage(props: { params: Promise<{ gymSlug: st
     return <StatusView status="error" message="This gym does not exist on the Gimmi network." />;
   }
 
-  // 2. Validate Membership
+  // 2. Validate JoinRequest is ACCEPTED
+  const joinRequest = await prisma.joinRequest.findUnique({
+    where: { userId_gymId: { userId, gymId: gym.id } },
+  });
+
+  if (!joinRequest || joinRequest.status !== "ACCEPTED") {
+    return (
+      <StatusView 
+        status="denied" 
+        message="Your join request has not been approved yet." 
+        subtext="Please wait for the gym owner to accept your request."
+        actionLink={`/${gymSlug}/join`}
+        actionText="View Status"
+      />
+    );
+  }
+
+  // 3. Validate Membership
   const membership = await prisma.gymMember.findUnique({
     where: { userId_gymId: { userId, gymId: gym.id } },
     include: { plan: true },
@@ -49,7 +66,7 @@ export default async function CheckInPage(props: { params: Promise<{ gymSlug: st
     );
   }
 
-  // 3. Cooldown Protection (e.g., prevent scanning twice by accident in 2 hours)
+  // 4. Cooldown Protection (e.g., prevent scanning twice by accident in 2 hours)
   const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
   const recentEntry = await prisma.attendance.findFirst({
     where: { gymId: gym.id, userId, entryTime: { gte: twoHoursAgo } },
@@ -67,7 +84,7 @@ export default async function CheckInPage(props: { params: Promise<{ gymSlug: st
     );
   }
 
-  // 4. Record the Successful Check-In
+  // 5. Record the Successful Check-In
   await prisma.attendance.create({
     data: {
       gymId: gym.id,
@@ -75,6 +92,20 @@ export default async function CheckInPage(props: { params: Promise<{ gymSlug: st
       status: "SUCCESS",
     },
   });
+
+  // 6. Trigger Pusher for Admin Live Dashboard
+  try {
+    const { pusherServer } = await import("@/lib/pusher");
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    await pusherServer.trigger(`gym-${gym.id}`, "entry-log", {
+      userName: user?.name || "Member",
+      userEmail: user?.email,
+      planName: membership.plan?.name || "Standard",
+      timestamp: new Date().toISOString(),
+    });
+  } catch (pushErr) {
+    console.error("Pusher trigger failed:", pushErr);
+  }
 
   // Success 
   return (
