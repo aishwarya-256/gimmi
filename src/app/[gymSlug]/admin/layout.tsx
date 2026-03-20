@@ -40,9 +40,29 @@ export default async function GymAdminLayout({
   ];
 
   return (
-    <div className="flex min-h-screen">
-      {/* Sidebar */}
-      <aside className="w-64 border-r border-white/[0.06] bg-black/40 backdrop-blur-md flex flex-col fixed top-20 bottom-0 left-0 z-40">
+    <div className="flex min-h-screen lg:pb-0 pb-20 pt-16 lg:pt-0">
+      
+      {/* Mobile Header (hidden on desktop) */}
+      <header className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-black/80 backdrop-blur-xl border-b border-white/[0.06] z-50 px-4 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-indigo-500 to-violet-500 flex items-center justify-center text-white shadow-lg shadow-indigo-500/20">
+            <Activity size={14} strokeWidth={2.5} />
+          </div>
+          <div>
+            <p className="text-sm font-bold text-white truncate max-w-[120px]">{gym.name}</p>
+            <p className="text-[10px] text-gray-500">Gym Admin</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          <Link href="/admin" className="text-xs font-semibold text-gray-400 hover:text-white transition-colors bg-white/5 px-2 py-1 rounded-md">
+            Exit
+          </Link>
+          <UserButton appearance={{ elements: { userButtonAvatarBox: "w-8 h-8 ring-1 ring-white/10" } }} />
+        </div>
+      </header>
+
+      {/* Desktop Sidebar (hidden on mobile) */}
+      <aside className="hidden lg:flex w-64 border-r border-white/[0.06] bg-black/40 backdrop-blur-md flex-col fixed top-0 bottom-0 left-0 z-40">
         {/* Gym Brand */}
         <div className="px-6 py-6 border-b border-white/[0.06]">
           <div className="flex items-center gap-3">
@@ -57,7 +77,7 @@ export default async function GymAdminLayout({
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 px-3 py-4 space-y-1">
+        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
           {navItems.map((item) => (
             <Link
               key={item.href}
@@ -71,7 +91,7 @@ export default async function GymAdminLayout({
         </nav>
 
         {/* Back Link */}
-        <div className="px-4 py-4 border-t border-white/[0.06] flex items-center justify-between">
+        <div className="px-4 py-4 border-t border-white/[0.06] flex items-center justify-between mt-auto">
           <Link href="/admin" className="text-xs text-gray-500 hover:text-white transition-colors">
             ← Back to Platform
           </Link>
@@ -79,8 +99,22 @@ export default async function GymAdminLayout({
         </div>
       </aside>
 
+      {/* Mobile Bottom Navigation Bar */}
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-black/90 backdrop-blur-2xl border-t border-white/[0.08] px-2 py-3 pb-safe shadow-[0_-10px_40px_rgba(0,0,0,0.5)] overflow-x-auto hide-scrollbar flex items-center gap-2 sm:gap-4">
+        {navItems.map((item) => (
+          <Link
+            key={item.href}
+            href={item.href}
+            className="flex flex-col items-center justify-center min-w-[70px] px-2 py-2 rounded-xl text-gray-400 hover:text-white hover:bg-white/5 active:bg-white/10 transition-colors shrink-0 group"
+          >
+            <item.icon size={20} className="mb-1.5 group-hover:scale-110 transition-transform text-gray-500 group-hover:text-indigo-400" />
+            <span className="text-[10px] font-semibold">{item.label}</span>
+          </Link>
+        ))}
+      </nav>
+
       {/* Main Content */}
-      <main className="flex-1 ml-64 px-8 py-8">
+      <main className="flex-1 lg:ml-64 w-full max-w-full overflow-x-hidden p-4 sm:p-8">
         {children}
       </main>
     </div>
