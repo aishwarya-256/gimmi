@@ -28,14 +28,17 @@ export default async function MemberLayout({
     redirect("/customer");
   }
 
-  // Allow gym owners/managers through without a join request
-  const adminMember = await prisma.gymMember.findUnique({
+  // Access Control: allow through if user has ANY active membership role,
+  // OR has an accepted JoinRequest. This handles owners, managers, staff,
+  // and members who existed before the JoinRequest system.
+  const member = await prisma.gymMember.findUnique({
     where: { userId_gymId: { userId, gymId: gym.id } },
   });
 
-  const isAdmin = adminMember && (adminMember.role === "OWNER" || adminMember.role === "MANAGER");
-
-  if (!isAdmin) {
+  if (member && (member.role === "OWNER" || member.role === "MANAGER" || member.role === "STAFF" || member.status === "ACTIVE")) {
+    // Active member or admin — allow through
+  } else {
+    // No membership record — check if they have an accepted join request
     const joinRequest = await prisma.joinRequest.findUnique({
       where: { userId_gymId: { userId, gymId: gym.id } },
     });
