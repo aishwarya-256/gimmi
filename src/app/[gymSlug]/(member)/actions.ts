@@ -21,7 +21,16 @@ async function verifyActiveMember(gymSlug: string) {
     include: { plan: true },
   });
 
-  if (!membership || membership.status !== "ACTIVE") {
+  if (!membership) {
+    redirect(`/${gymSlug}/join`);
+  }
+
+  // Allow Owners/Managers to bypass plan check
+  if (membership.role === "OWNER" || membership.role === "MANAGER") {
+    return { gym, membership, userId };
+  }
+
+  if (membership.status !== "ACTIVE") {
     redirect(`/${gymSlug}/join`);
   }
 

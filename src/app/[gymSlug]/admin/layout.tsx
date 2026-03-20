@@ -13,9 +13,19 @@ export default async function GymAdminLayout({
 }) {
   const { gymSlug } = await params;
   const { userId } = await auth();
-
   if (!userId) {
     redirect("/sign-in");
+  }
+
+  const { PrismaClient } = await import("@prisma/client");
+  const prisma = new PrismaClient();
+  const gym = await prisma.gym.findUnique({
+    where: { slug: gymSlug },
+    select: { name: true }
+  });
+
+  if (!gym) {
+    redirect("/admin");
   }
 
   const navItems = [
@@ -41,7 +51,7 @@ export default async function GymAdminLayout({
               <Activity size={16} strokeWidth={2.5} />
             </div>
             <div>
-              <p className="text-sm font-bold text-white truncate">{gymSlug}</p>
+              <p className="text-sm font-bold text-white truncate max-w-[120px]">{gym.name}</p>
               <p className="text-[11px] text-gray-500">Gym Admin</p>
             </div>
           </div>

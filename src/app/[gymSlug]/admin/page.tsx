@@ -1,6 +1,7 @@
 import { getGymDashboardData } from "./actions";
-import { Building2, Users, CreditCard, QrCode, Megaphone } from "lucide-react";
+import { Building2, Users, CreditCard, QrCode, Megaphone, ExternalLink } from "lucide-react";
 import LiveAttendanceFeed from "@/components/admin/LiveAttendanceFeed";
+import Link from "next/link";
 
 export default async function GymAdminOverview(props: { params: Promise<{ gymSlug: string }> }) {
   const { gymSlug } = await props.params;
@@ -9,9 +10,18 @@ export default async function GymAdminOverview(props: { params: Promise<{ gymSlu
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-black text-white tracking-tight">{data.gym.name}</h1>
-        <p className="text-gray-500 text-sm mt-1">Dashboard overview for your gym</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-black text-white tracking-tight">{data.gym.name}</h1>
+          <p className="text-gray-500 text-sm mt-1">Dashboard overview for your gym</p>
+        </div>
+        <Link 
+          href={`/${gymSlug}`} 
+          target="_blank"
+          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:bg-white/10 transition-all text-xs font-bold"
+        >
+          View Live Site <ExternalLink size={14} />
+        </Link>
       </div>
 
       {/* Stats Grid */}
