@@ -13,7 +13,7 @@ async function verifyActiveMember(gymSlug: string) {
   const { userId } = await auth();
   if (!userId) redirect("/sign-in");
 
-  const gym = await prisma.gym.findUnique({ where: { slug: gymSlug } });
+  const gym = await prisma.gym.findUnique({ where: { slug: gymSlug.toLowerCase() } });
   if (!gym) notFound();
 
   const membership = await prisma.gymMember.findUnique({

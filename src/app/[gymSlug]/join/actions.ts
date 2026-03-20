@@ -29,6 +29,10 @@ export async function joinGymAction(formData: FormData) {
     }
   });
 
+  const gym = await prisma.gym.findUnique({
+    where: { slug: slug.toLowerCase() }
+  });
+
   // Check if a request already exists
   const existingRequest = await prisma.joinRequest.findUnique({
     where: { userId_gymId: { userId, gymId } }

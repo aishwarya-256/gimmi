@@ -11,7 +11,7 @@ export default async function JoinGymPage(props: {
   params: Promise<{ gymSlug: string }>,
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }) {
-  const { gymSlug } = await props.params;
+  const gymSlug = (await props.params).gymSlug.toLowerCase();
   const searchParams = await props.searchParams;
   const urlStatus = searchParams.status as string | undefined;
   const { userId } = await auth();

@@ -14,7 +14,7 @@ async function verifyGymAdmin(gymSlug: string) {
   if (!userId) throw new Error("Unauthorized");
 
   const gym = await prisma.gym.findUnique({
-    where: { slug: gymSlug },
+    where: { slug: gymSlug.toLowerCase() },
     include: {
       members: { where: { userId, role: { in: ["OWNER", "MANAGER"] } } }
     }

@@ -20,7 +20,7 @@ export default async function GymAdminLayout({
   const { PrismaClient } = await import("@prisma/client");
   const prisma = new PrismaClient();
   const gym = await prisma.gym.findUnique({
-    where: { slug: gymSlug },
+    where: { slug: gymSlug.toLowerCase() },
     select: { name: true }
   });
 
