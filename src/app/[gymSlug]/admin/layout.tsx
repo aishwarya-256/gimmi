@@ -1,4 +1,5 @@
 import { auth } from "@clerk/nextjs/server";
+import { UserButton } from "@clerk/nextjs";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Activity, LayoutDashboard, CreditCard, Users, Megaphone, QrCode } from "lucide-react";
@@ -57,10 +58,11 @@ export default async function GymAdminLayout({
         </nav>
 
         {/* Back Link */}
-        <div className="px-4 py-4 border-t border-white/[0.06]">
+        <div className="px-4 py-4 border-t border-white/[0.06] flex items-center justify-between">
           <Link href="/admin" className="text-xs text-gray-500 hover:text-white transition-colors">
             ← Back to Platform
           </Link>
+          <UserButton appearance={{ elements: { userButtonAvatarBox: "w-8 h-8 ring-1 ring-white/10" } }} />
         </div>
       </aside>
 

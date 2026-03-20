@@ -1,4 +1,5 @@
 import { auth } from "@clerk/nextjs/server";
+import { UserButton } from "@clerk/nextjs";
 import { redirect } from "next/navigation";
 import { Building2, Plus, ArrowRight, Zap, Users, BarChart3, ShieldCheck, Trash2 } from "lucide-react";
 import { createGymAction, deleteGymAction } from "./actions";
@@ -31,7 +32,7 @@ export default async function PlatformAdminDashboard() {
       <div className="absolute top-1/2 left-1/4 w-[300px] h-[300px] bg-fuchsia-600/8 rounded-full blur-[100px] -z-10"></div>
 
       {/* Header Section */}
-      <div className="w-full max-w-6xl px-6 pt-16 pb-8">
+      <div className="w-full max-w-6xl px-6 pt-16 pb-8 flex items-center justify-between">
         <div className="flex items-center gap-4 mb-2">
           <div className="h-12 w-12 bg-gradient-to-tr from-indigo-500 to-violet-500 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-indigo-500/25">
             <Building2 size={24} />
@@ -41,6 +42,7 @@ export default async function PlatformAdminDashboard() {
             <p className="text-gray-400 text-sm mt-1">Manage your gym effortlessly</p>
           </div>
         </div>
+        <UserButton appearance={{ elements: { userButtonAvatarBox: "w-10 h-10 shadow-xl ring-2 ring-white/10" } }} />
       </div>
 
       {/* Quick Stats Grid */}

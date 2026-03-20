@@ -1,4 +1,5 @@
 import { auth } from "@clerk/nextjs/server";
+import { UserButton } from "@clerk/nextjs";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Activity, LayoutDashboard, QrCode, History, Megaphone } from "lucide-react";
@@ -37,9 +38,12 @@ export default async function MemberLayout({
             <p className="text-[11px] text-gray-400 font-medium">Member App</p>
           </div>
         </div>
-        <Link href={`/${gymSlug}/admin`} className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-3 py-1.5 rounded-full ring-1 ring-emerald-500/20 hover:bg-emerald-500/20 transition-all">
-          Admin →
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link href={`/${gymSlug}/admin`} className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-3 py-1.5 rounded-full ring-1 ring-emerald-500/20 hover:bg-emerald-500/20 transition-all hidden sm:block">
+            Admin →
+          </Link>
+          <UserButton appearance={{ elements: { userButtonAvatarBox: "w-8 h-8 shadow-md ring-1 ring-emerald-500/20" } }} />
+        </div>
       </header>
 
       {/* Main Content Area */}
