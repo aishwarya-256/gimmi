@@ -11,7 +11,7 @@ const prisma = new PrismaClient();
 // Helper: verify the current user is an OWNER/MANAGER of the given gym
 async function verifyGymAdmin(gymSlug: string) {
   const { userId } = await auth();
-  if (!userId) throw new Error("Unauthorized");
+  if (!userId) redirect("/sign-in");
 
   const gym = await prisma.gym.findUnique({
     where: { slug: gymSlug.toLowerCase() },
@@ -20,8 +20,8 @@ async function verifyGymAdmin(gymSlug: string) {
     }
   });
 
-  if (!gym) throw new Error("Gym not found");
-  if (gym.members.length === 0) throw new Error("Access denied — you are not an admin of this gym.");
+  if (!gym) redirect("/admin");
+  if (gym.members.length === 0) redirect("/admin");
 
   return { gym, userId };
 }
