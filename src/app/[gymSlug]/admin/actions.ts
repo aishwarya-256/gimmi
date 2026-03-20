@@ -2,6 +2,9 @@
 
 import { auth } from "@clerk/nextjs/server";
 import { PrismaClient } from "@prisma/client";
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import jwt from "jsonwebtoken";
 
 const prisma = new PrismaClient();
 
@@ -141,3 +144,82 @@ export async function getDailyAttendance(gymSlug: string) {
   });
 } 
 
+export async function getJoinRequests(gymSlug: string) {
+  const gym = await prisma.gym.findUnique({
+    where: { slug: gymSlug },
+    select: { id: true }
+  });
+
+  if (!gym) return [];
+
+  return await prisma.joinRequest.findMany({
+    where: { gymId: gym.id, status: "PENDING" },
+    include: { user: true },
+    orderBy: { createdAt: "desc" }
+  });
+}
+
+export async function handleJoinRequestAction(requestId: string, action: "ACCEPT" | "REJECT") {
+  const { userId: adminUserId } = await auth();
+  if (!adminUserId) throw new Error("Unauthorized");
+
+  const request = await prisma.joinRequest.findUnique({
+    where: { id: requestId },
+    include: { gym: true }
+  });
+
+  if (!request) throw new Error("Request not found");
+
+  // Update request status
+  await prisma.joinRequest.update({
+    where: { id: requestId },
+    data: { status: action === "ACCEPT" ? "ACCEPTED" : "REJECTED" }
+  });
+
+  if (action === "ACCEPT") {
+    // Create or Activate member record
+    // We already create a member record with status ACTIVE in joinGymAction,
+    // but the approval flow is what unlocks the UI.
+    // If for some reason member record doesn't exist, create it.
+    await prisma.gymMember.upsert({
+      where: { userId_gymId: { userId: request.userId, gymId: request.gymId } },
+      update: { status: "ACTIVE" },
+      create: { 
+        userId: request.userId, 
+        gymId: request.gymId, 
+        role: "MEMBER", 
+        status: "ACTIVE" 
+      }
+    });
+  }
+
+  // Real-time notification via Pusher
+  try {
+    const { pusherServer } = await import("@/lib/pusher");
+    await pusherServer.trigger(`user-${request.userId}`, "join-request-updated", {
+      gymName: request.gym.name,
+      status: action.toLowerCase()
+    });
+  } catch (err) {
+    console.error("Pusher error:", err);
+  }
+
+  revalidatePath(`/${request.gym.slug}/admin/requests`);
+}
+
+export async function generateGymEntryTokenAction(gymSlug: string) {
+  const { gym } = await verifyGymAdmin(gymSlug);
+  
+  const tokenPayload = {
+    gymId: gym.id,
+    gymSlug: gym.slug,
+    timestamp: Date.now(),
+    type: "STATIONARY_ENTRY"
+  };
+
+  const secret = gym.qrSecret || process.env.CLERK_SECRET_KEY || "fallback";
+  
+  const token = jwt.sign(tokenPayload, secret, { expiresIn: "30s" });
+  
+  return token;
+}

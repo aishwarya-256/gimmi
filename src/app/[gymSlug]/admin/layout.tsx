@@ -20,6 +20,8 @@ export default async function GymAdminLayout({
 
   const navItems = [
     { label: "Overview", href: `/${gymSlug}/admin`, icon: LayoutDashboard },
+    { label: "Join Requests", href: `/${gymSlug}/admin/requests`, icon: Users },
+    { label: "QR Terminal", href: `/${gymSlug}/admin/qr`, icon: QrCode },
     { label: "Plans", href: `/${gymSlug}/admin/plans`, icon: CreditCard },
     { label: "Members", href: `/${gymSlug}/admin/members`, icon: Users },
     { label: "Announcements", href: `/${gymSlug}/admin/announcements`, icon: Megaphone },

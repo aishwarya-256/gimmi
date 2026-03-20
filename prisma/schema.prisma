@@ -39,6 +39,12 @@ enum VerificationStatus {
   REJECTED
 }
 
+enum JoinStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
 model User {
   id                    String        @id
   email                 String        @unique
@@ -48,6 +54,7 @@ model User {
   attendanceLog         Attendance[]
   stories               Story[]
   interactionRequests   InteractionRequest[]
+  joinRequests          JoinRequest[]
   createdAt             DateTime      @default(now())
   updatedAt             DateTime      @updatedAt
 }
@@ -61,6 +68,7 @@ model Gym {
   ownerEmail               String?
   ownerWhatsApp            String?
   address                  String?
+  qrSecret                 String?       @default(dbgenerated("gen_random_uuid()"))
   members                  GymMember[]
   plans                    MembershipPlan[]
   announcements            Announcement[]
@@ -68,6 +76,7 @@ model Gym {
   attendance               Attendance[]
   trainerVerifications     TrainerVerificationRequest[]
   verifiedTrainers         Trainer[]
+  joinRequests             JoinRequest[]
   createdAt                DateTime      @default(now())
   updatedAt                DateTime      @updatedAt
 }
@@ -175,4 +184,17 @@ model InteractionRequest {
   updatedAt      DateTime            @updatedAt
 
   @@unique([userId, trainerId])
+}
+
+model JoinRequest {
+  id             String      @id @default(uuid())
+  userId         String
+  gymId          String
+  status         JoinStatus  @default(PENDING)
+  user           User        @relation(fields: [userId], references: [id])
+  gym            Gym         @relation(fields: [gymId], references: [id])
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  @@unique([userId, gymId])
 }

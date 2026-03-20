@@ -1,5 +1,6 @@
 import { getMemberDashboard } from "./actions";
-import { CreditCard, CalendarCheck, Activity, Megaphone, Phone, MessageCircle, Mail, MapPin, Building2 } from "lucide-react";
+import { CreditCard, CalendarCheck, Activity, Megaphone, Phone, MessageCircle, Mail, MapPin, Building2, ShieldCheck } from "lucide-react";
+import Link from "next/link";
 
 export default async function MemberDashboard(props: { params: Promise<{ gymSlug: string }> }) {
   const { gymSlug } = await props.params;
@@ -121,7 +122,7 @@ export default async function MemberDashboard(props: { params: Promise<{ gymSlug
           <p className="text-gray-500 text-sm">No announcements from your gym yet.</p>
         ) : (
           <div className="space-y-3">
-            {data.announcements.map((a) => (
+            {data.announcements.map((a: any) => (
               <div key={a.id} className="p-4 bg-white/[0.02] border border-white/[0.05] rounded-xl hover:bg-white/[0.04] transition-all">
                 <h3 className="text-sm font-semibold text-white">{a.title}</h3>
                 <p className="text-xs text-gray-500 mt-1.5 leading-relaxed">{a.content}</p>

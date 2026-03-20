@@ -1,5 +1,6 @@
 import { getGymDashboardData } from "./actions";
 import { Building2, Users, CreditCard, QrCode, Megaphone } from "lucide-react";
+import LiveAttendanceFeed from "@/components/admin/LiveAttendanceFeed";
 
 export default async function GymAdminOverview(props: { params: Promise<{ gymSlug: string }> }) {
   const { gymSlug } = await props.params;
@@ -21,25 +22,35 @@ export default async function GymAdminOverview(props: { params: Promise<{ gymSlu
         <StatCard icon={<Building2 className="w-5 h-5" />} label="Status" value={data.gym.isActive ? "Active" : "Inactive"} color="violet" />
       </div>
 
-      {/* Recent Announcements */}
-      <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-6">
-        <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-          <Megaphone size={18} className="text-indigo-400" />
-          Recent Announcements
-        </h2>
-        {data.announcements.length === 0 ? (
-          <p className="text-gray-500 text-sm">No announcements yet. Post one from the Announcements page.</p>
-        ) : (
-          <div className="space-y-3">
-            {data.announcements.map((a) => (
-              <div key={a.id} className="p-4 bg-white/[0.02] border border-white/[0.05] rounded-xl">
-                <h3 className="text-sm font-semibold text-white">{a.title}</h3>
-                <p className="text-xs text-gray-500 mt-1 line-clamp-2">{a.content}</p>
-                <p className="text-[11px] text-gray-600 mt-2">{new Date(a.createdAt).toLocaleDateString()}</p>
-              </div>
-            ))}
-          </div>
-        )}
+      {/* Main Grid: Feed & Announcements */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Live Feed (2/3 width) */}
+        <div className="lg:col-span-2">
+          <LiveAttendanceFeed gymId={data.gym.id} />
+        </div>
+
+        {/* Recent Announcements (1/3 width) */}
+        <div className="bg-white/[0.03] border border-white/[0.06] rounded-[2rem] p-6 h-full flex flex-col">
+          <h2 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
+            <Megaphone size={18} className="text-indigo-400" />
+            Recent Updates
+          </h2>
+          {data.announcements.length === 0 ? (
+            <div className="flex-1 flex flex-col items-center justify-center text-center">
+               <p className="text-gray-500 text-sm">No recent announcements.</p>
+            </div>
+          ) : (
+            <div className="space-y-3 flex-1 overflow-y-auto custom-scrollbar">
+              {data.announcements.map((a) => (
+                <div key={a.id} className="p-4 bg-white/[0.02] border border-white/[0.05] rounded-2xl hover:bg-white/[0.04] transition-all group">
+                  <h3 className="text-sm font-semibold text-white group-hover:text-indigo-400 transition-colors">{a.title}</h3>
+                  <p className="text-xs text-gray-500 mt-1 line-clamp-2 leading-relaxed">{a.content}</p>
+                  <p className="text-[10px] text-gray-600 mt-3 font-medium uppercase tracking-widest">{new Date(a.createdAt).toLocaleDateString()}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
