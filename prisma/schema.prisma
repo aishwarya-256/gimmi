@@ -151,6 +151,7 @@ model Attendance {
   planStatus     String        @default("Unknown")
   isSuccess      Boolean       @default(false)
   denialReason   String?
+  scanMethod     String        @default("in-app") // in-app | external
   scannedById    String?       
   entryTime      DateTime      @default(now())
   gym            Gym           @relation(fields: [gymId], references: [id])

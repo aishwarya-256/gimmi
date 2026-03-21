@@ -233,3 +233,21 @@ export async function getGymIdBySlug(gymSlug: string) {
   const { gym } = await verifyGymAdmin(gymSlug);
   return gym.id;
 }
+
+const QR_SECRET = process.env.CLERK_SECRET_KEY || "gimmi-qr-secret-fallback";
+
+// Generate a short-lived cryptographically signed token for the wall display
+export async function generateDynamicQrPass(gymSlug: string) {
+  const { gym } = await verifyGymAdmin(gymSlug);
+  
+  const payload = {
+    gymId: gym.id,
+    gymSlug: gym.slug,
+    type: "entry",
+    nonce: Math.random().toString(36).substring(2, 15)
+  };
+
+  // Issue a 60-second rolling token
+  const token = jwt.sign(payload, QR_SECRET, { expiresIn: "60s" });
+  return token;
+}

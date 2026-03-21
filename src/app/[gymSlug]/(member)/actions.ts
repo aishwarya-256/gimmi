@@ -3,6 +3,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { PrismaClient } from "@prisma/client";
 import { notFound, redirect } from "next/navigation";
+import jwt from "jsonwebtoken";
 
 const prisma = new PrismaClient();
 const QR_SECRET = process.env.CLERK_SECRET_KEY || "gimmi-qr-secret-fallback";
@@ -90,7 +91,7 @@ export async function getAttendanceHistory(gymSlug: string) {
 }
 
 // Verify scanning entry
-export async function verifyGymEntryAction(gymSlug: string, token: string) {
+export async function verifyGymEntryAction(gymSlug: string, tokenParam: string, method: "in-app" | "external" = "in-app") {
   const { userId } = await auth();
   if (!userId) return { success: false, message: "Authentication required" };
 
@@ -121,6 +122,8 @@ export async function verifyGymEntryAction(gymSlug: string, token: string) {
         planStatus,
         isSuccess,
         denialReason: reason,
+        // @ts-ignore - IDE Cache Lag
+        scanMethod: method,
         entryTime: new Date(),
       }
     });
@@ -141,26 +144,32 @@ export async function verifyGymEntryAction(gymSlug: string, token: string) {
   }
 
   try {
-    let secretToCheck = token;
-    
-    if (token.includes("check-in?t=")) {
+    // 1. Extract Token from potentially full URL
+    let token = tokenParam;
+    if (tokenParam.includes("check-in?t=")) {
       try {
-        const url = new URL(token);
-        secretToCheck = url.searchParams.get("t") || token;
-        
-        const pathSlug = url.pathname.split('/')[1];
-        if (pathSlug && pathSlug !== gymSlug) {
-          await logScan(false, "Wrong Gym QR Scanned");
-          return { success: false, message: "Wrong Gym QR Scanned" };
-        }
+        const url = new URL(tokenParam);
+        token = url.searchParams.get("t") || tokenParam;
       } catch (e) {}
     }
 
-    if (!gym.qrSecret || gym.qrSecret !== secretToCheck) {
-      await logScan(false, "Invalid QR token or tampered URL");
-      return { success: false, message: "Invalid or expired QR code" };
+    // 2. Cryptographic Validation
+    let payload: any;
+    try {
+      payload = jwt.verify(token, QR_SECRET);
+    } catch (err: any) {
+      const reason = err.name === "TokenExpiredError" ? "QR Code Expired" : "Invalid QR Signature";
+      await logScan(false, reason);
+      return { success: false, message: reason };
     }
 
+    // Prevent token reuse from incorrect gyms
+    if (payload.gymId !== gym.id || payload.type !== "entry") {
+      await logScan(false, "Mismatched Gym QR Token");
+      return { success: false, message: "Wrong Gym QR Scanned" };
+    }
+
+    // 3. User Validation Rule Engine
     const isOwnerOrStaff = member && ["OWNER", "MANAGER", "STAFF"].includes(member.role);
     if (isOwnerOrStaff) {
       await logScan(true, null, member.role);
@@ -191,6 +200,21 @@ export async function verifyGymEntryAction(gymSlug: string, token: string) {
     if (new Date() > expiresAt) {
       await logScan(false, "Plan Expired", member.plan.name);
       return { success: false, message: "Your membership plan has expired" };
+    }
+
+    // 4. Cooldown Anti-Spam
+    const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
+    const recentScan = await prisma.attendance.findFirst({
+      where: {
+        gymId: gym.id,
+        userId: userId,
+        isSuccess: true,
+        entryTime: { gte: twoHoursAgo }
+      }
+    });
+
+    if (recentScan) {
+      return { success: true, message: "Already checked in! Have a great workout." };
     }
 
     await logScan(true, null, member.plan.name);
