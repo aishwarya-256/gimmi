@@ -1,19 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useState, use } from "react";
 import { Scanner } from "@yudiel/react-qr-scanner";
 import { ArrowLeft, Camera, ShieldCheck, Loader2, CheckCircle2, XCircle } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { verifyGymEntryAction } from "../actions";
 
-export default function ScanGymPage({ params }: { params: { gymSlug: string } }) {
+export default function ScanGymPage(props: { params: Promise<{ gymSlug: string }> }) {
+  const { gymSlug } = use(props.params);
   const [scanning, setScanning] = useState(true);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{ success: boolean; message: string } | null>(null);
   const router = useRouter();
 
-  const handleScan = async (detectedCodes: any[]) => {
+  const handleScan = async (detectedCodes: { rawValue: string }[]) => {
     if (detectedCodes.length === 0 || loading || !scanning) return;
     
     const token = detectedCodes[0].rawValue;
@@ -21,11 +22,10 @@ export default function ScanGymPage({ params }: { params: { gymSlug: string } })
     setLoading(true);
 
     try {
-      const response = await verifyGymEntryAction(params.gymSlug, token);
+      const response = await verifyGymEntryAction(gymSlug, token, "in-app");
       setResult(response);
       if (response.success) {
-        // Redirect after 2 seconds
-        setTimeout(() => router.push(`/${params.gymSlug}`), 2000);
+        setTimeout(() => router.push(`/${gymSlug}`), 2000);
       }
     } catch (err) {
       setResult({ success: false, message: "Server connection failed" });
@@ -37,7 +37,7 @@ export default function ScanGymPage({ params }: { params: { gymSlug: string } })
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white flex flex-col p-6 space-y-8 animate-in fade-in duration-500">
       <header className="flex items-center justify-between">
-        <Link href={`/${params.gymSlug}`} className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center border border-white/10 hover:bg-white/10 transition-colors">
+        <Link href={`/${gymSlug}`} className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center border border-white/10 hover:bg-white/10 transition-colors">
           <ArrowLeft size={18} />
         </Link>
         <div className="px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-black uppercase tracking-widest text-emerald-400 flex items-center gap-2">
