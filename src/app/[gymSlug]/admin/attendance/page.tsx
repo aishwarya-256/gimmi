@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { CheckCircle, XCircle, Printer, QrCode, MapPin } from "lucide-react";
 import QRCode from "react-qr-code";
-import { getDailyAttendance, getGymIdBySlug, generateDynamicQrPass } from "../actions";
+import { getDailyAttendance, getGymIdBySlug, getGymQrSecret, rotateGymQrSecretAction } from "../actions";
 import { getPusherClient } from "@/lib/pusher-client";
 
 type AttendanceRecord = {
@@ -26,30 +26,18 @@ export default function QRScannerPage({ params }: { params: Promise<{ gymSlug: s
   const [attendances, setAttendances] = useState<AttendanceRecord[]>([]);
 
   useEffect(() => {
-    let intervalId: NodeJS.Timeout;
-
     params.then(async (p) => {
       setGymSlug(p.gymSlug);
-      const [data, id, token] = await Promise.all([
+      const [data, id, secret] = await Promise.all([
         getDailyAttendance(p.gymSlug),
         getGymIdBySlug(p.gymSlug),
-        generateDynamicQrPass(p.gymSlug)
+        getGymQrSecret(p.gymSlug)
       ]);
       setAttendances(data as unknown as AttendanceRecord[]);
       if (id) setGymId(id);
-      if (token) setQrSecret(token);
-
-      // Rotate Token Automatically every 30 seconds
-      intervalId = setInterval(async () => {
-        setIsRotating(true);
-        const newToken = await generateDynamicQrPass(p.gymSlug);
-        setQrSecret(newToken);
-        setIsRotating(false);
-      }, 30000);
+      if (secret) setQrSecret(secret);
     });
     setOrigin(window.location.origin);
-
-    return () => clearInterval(intervalId);
   }, [params]);
 
   // --- Pusher real-time subscription ---
@@ -80,16 +68,22 @@ export default function QRScannerPage({ params }: { params: Promise<{ gymSlug: s
     };
   }, [gymId]);
 
+  const handleRotate = async () => {
+    if (confirm("Are you sure? Old desk posters will stop working immediately.")) {
+      setIsRotating(true);
+      const newSecret = await rotateGymQrSecretAction(gymSlug);
+      setQrSecret(newSecret);
+      setIsRotating(false);
+    }
+  };
+
   const checkInUrl = `${origin}/${gymSlug}/check-in?t=${qrSecret}`;
 
   return (
     <div className="space-y-8 pb-12">
       <div>
-        <h1 className="text-3xl font-black text-white tracking-tight">Live Terminal QR</h1>
-        <p className="text-emerald-500 font-bold text-sm mt-1 flex items-center gap-2">
-          <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
-          Secure Cryptographic Auto-Rotation Active
-        </p>
+        <h1 className="text-3xl font-black text-white tracking-tight">Wall QR Poster</h1>
+        <p className="text-gray-500 text-sm mt-1">Print this static QR code and place it at your front desk or wall.</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -120,14 +114,25 @@ export default function QRScannerPage({ params }: { params: Promise<{ gymSlug: s
 
           <h2 className="text-2xl font-black text-white mb-2 tracking-tight">Scan to Enter</h2>
           <p className="text-gray-400 text-sm max-w-xs leading-relaxed mb-6 sm:mb-8">
-            Members simply open their native phone camera, scan this code, and their attendance is instantly verified and logged. This code rotates automatically.
+            Members simply open their native phone camera, scan this code, and their attendance is instantly verified and logged.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 w-full justify-center">
-            <div className="px-6 py-3 bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 font-bold rounded-xl flex items-center justify-center gap-2">
+            <button 
+              onClick={() => window.print()}
+              className="px-8 py-3 bg-white text-black font-bold rounded-xl hover:bg-gray-200 transition-all flex items-center justify-center gap-3 shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:scale-105 active:scale-95"
+            >
+              <Printer size={18} />
+              Print Desk Poster
+            </button>
+            <button 
+              onClick={handleRotate}
+              disabled={isRotating}
+              className="px-6 py-3 bg-red-500/10 text-red-500 border border-red-500/20 font-bold rounded-xl hover:bg-red-500/20 transition-all flex items-center justify-center gap-2 hover:scale-105 active:scale-95 disabled:opacity-50"
+            >
               <QrCode size={18} />
-              {isRotating ? "Refreshing pass..." : "Pass Active (30s)"}
-            </div>
+              {isRotating ? "Rotating..." : "Rotate QR"}
+            </button>
           </div>
         </div>
 
