@@ -48,8 +48,8 @@ export default function ScanGymPage({ params }: { params: { gymSlug: string } })
 
       <div className="flex-1 flex flex-col items-center justify-center space-y-8">
         <div className="text-center space-y-2">
-          <h1 className="text-3xl font-black tracking-tight">Cryptographic Scanner</h1>
-          <p className="text-gray-500 text-sm max-w-xs mx-auto">Point your camera at the auto-rotating QR code displayed at the gym front desk.</p>
+          <h1 className="text-3xl font-black tracking-tight">Scan Gym QR</h1>
+          <p className="text-gray-500 text-sm max-w-xs mx-auto">Point your camera at the QR code displayed at the gym front desk.</p>
         </div>
 
         <div className="relative w-full max-w-sm aspect-square rounded-[3rem] overflow-hidden border border-white/10 bg-white/5 shadow-2xl">

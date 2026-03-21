@@ -148,17 +148,29 @@ export async function verifyGymEntryAction(gymSlug: string, tokenParam: string, 
   try {
     // 1. Extract Token from potentially full URL
     let secretToCheck = tokenParam;
-    if (tokenParam.includes("check-in?t=")) {
+    
+    // Handle full URL format: https://domain.com/gym-slug/check-in?t=SECRET
+    if (tokenParam.includes("check-in") || tokenParam.includes("?") || tokenParam.startsWith("http")) {
       try {
         const url = new URL(tokenParam);
-        secretToCheck = url.searchParams.get("t") || tokenParam;
+        const extracted = url.searchParams.get("t");
+        if (extracted) {
+          secretToCheck = extracted;
+        }
         
+        // Cross-gym protection
         const pathSlug = url.pathname.split('/')[1];
         if (pathSlug && pathSlug !== gymSlug) {
           await logScan(false, "Wrong Gym QR Scanned");
           return { success: false, message: "Wrong Gym QR Scanned" };
         }
-      } catch (e) {}
+      } catch (e) {
+        // If URL parsing fails, try regex fallback
+        const match = tokenParam.match(/[?&]t=([^&]+)/);
+        if (match && match[1]) {
+          secretToCheck = decodeURIComponent(match[1]);
+        }
+      }
     }
 
     if (!gym.qrSecret || gym.qrSecret !== secretToCheck) {
