@@ -3,6 +3,7 @@ import { UserButton } from "@clerk/nextjs";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Activity, LayoutDashboard, CreditCard, Users, Megaphone, QrCode, Phone, User, UserX } from "lucide-react";
+import VerificationPortal from "./verification-portal";
 
 export default async function GymAdminLayout({
   children,
@@ -21,11 +22,26 @@ export default async function GymAdminLayout({
   const prisma = new PrismaClient();
   const gym = await prisma.gym.findUnique({
     where: { slug: gymSlug.toLowerCase() },
-    select: { name: true }
+    select: { name: true, id: true, verificationStatus: true, verification: true }
   });
 
   if (!gym) {
     redirect("/admin");
+  }
+
+  // ==== TRUST AND SAFETY: GLOBAL VERIFICATION LOCKOUT ====
+  // If the gym has not completed physical verification, aggressively intercept the layout 
+  // and funnel the Gym Owner exactly into the Verification Portal UI.
+  if (gym.verificationStatus !== "APPROVED") {
+    return (
+      <VerificationPortal 
+        gymSlug={gymSlug}
+        gymId={gym.id}
+        gymName={gym.name}
+        verificationStatus={gym.verificationStatus}
+        verificationRecord={gym.verification}
+      />
+    );
   }
 
   const navItems = [

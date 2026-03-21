@@ -52,6 +52,9 @@ export default function LandingPage() {
           <Link href="/admin" className="w-full sm:w-auto justify-center px-8 py-4 bg-transparent text-gray-300 font-bold rounded-2xl sm:rounded-full hover:bg-white/5 transition-all flex items-center gap-2">
             Gym Owner Login
           </Link>
+          <Link href="/trainer/dashboard" className="w-full sm:w-auto justify-center px-8 py-4 bg-transparent text-gray-300 font-bold rounded-2xl sm:rounded-full hover:bg-white/5 transition-all flex items-center gap-2">
+            Trainer Login
+          </Link>
         </div>
 
         {/* Dashboard Preview Wireframe Mockup (Linear Aesthetic) */}

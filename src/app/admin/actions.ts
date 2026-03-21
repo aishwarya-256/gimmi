@@ -52,6 +52,7 @@ export async function createGymAction(formData: FormData) {
       name,
       slug: cleanSlug,
       isActive: true,
+      verificationStatus: "NOT_SUBMITTED",
       members: {
         create: {
           userId: userId,
@@ -89,6 +90,12 @@ export async function deleteGymAction(formData: FormData) {
   await prisma.gymMember.deleteMany({ where: { gymId } });
   await prisma.membershipPlan.deleteMany({ where: { gymId } });
   await prisma.trainerVerificationRequest.deleteMany({ where: { gymId } });
+
+  const verification = await prisma.gymVerification.findUnique({ where: { gymId } });
+  if (verification) {
+    await prisma.verificationAuditLog.deleteMany({ where: { verificationId: verification.id } });
+    await prisma.gymVerification.delete({ where: { id: verification.id } });
+  }
 
   // Finally, delete the Gym itself
   await prisma.gym.delete({

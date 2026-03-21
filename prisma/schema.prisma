@@ -40,6 +40,18 @@ enum JoinStatus {
   REJECTED
 }
 
+enum GymVerificationStatus {
+  NOT_SUBMITTED
+  SUBMITTED
+  PENDING_VISIT
+  VISIT_ASSIGNED
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  SUSPENDED
+  REVERIFICATION_REQUIRED
+}
+
 model User {
   id                    String        @id
   email                 String        @unique
@@ -50,6 +62,8 @@ model User {
   stories               Story[]
   interactionRequests   InteractionRequest[]
   joinRequests          JoinRequest[]
+  assignedVerifications GymVerification[] @relation("Verifier")
+  auditLogsCreated      VerificationAuditLog[]
   createdAt             DateTime      @default(now())
   updatedAt             DateTime      @updatedAt
 }
@@ -72,6 +86,8 @@ model Gym {
   trainerVerifications     TrainerVerificationRequest[]
   verifiedTrainers         Trainer[]
   joinRequests             JoinRequest[]
+  verificationStatus       GymVerificationStatus @default(APPROVED)
+  verification             GymVerification?
   createdAt                DateTime      @default(now())
   updatedAt                DateTime      @updatedAt
 }
@@ -207,4 +223,51 @@ model JoinRequest {
   updatedAt      DateTime    @updatedAt
 
   @@unique([userId, gymId])
+}
+
+model GymVerification {
+  id               String   @id @default(uuid())
+  gymId            String   @unique
+  gym              Gym      @relation(fields: [gymId], references: [id], onDelete: Cascade)
+  ownerName        String
+  phone            String
+  email            String
+  address          String
+  latitude         Float?
+  longitude        Float?
+  
+  photos           Json     @default("[]")
+  documents        Json     @default("[]")
+  
+  status           GymVerificationStatus @default(NOT_SUBMITTED)
+  
+  rejectionReason  String?
+  suspensionReason String?
+  
+  assignedToId     String?
+  assignedTo       User?    @relation("Verifier", fields: [assignedToId], references: [id])
+  
+  visitDate        DateTime?
+  visitEvidence    Json     @default("[]")
+  notes            String?
+  
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  
+  auditLogs        VerificationAuditLog[]
+}
+
+model VerificationAuditLog {
+  id              String   @id @default(uuid())
+  verificationId  String
+  verification    GymVerification @relation(fields: [verificationId], references: [id], onDelete: Cascade)
+  
+  changedById     String?
+  changedBy       User?    @relation(fields: [changedById], references: [id])
+  
+  oldStatus       GymVerificationStatus?
+  newStatus       GymVerificationStatus
+  reason          String?
+  
+  createdAt       DateTime @default(now())
 }

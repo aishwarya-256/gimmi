@@ -25,7 +25,7 @@ export default async function JoinGymPage(props: {
     }
   });
 
-  if (!gym) {
+  if (!gym || gym.verificationStatus !== "APPROVED") {
     redirect("/customer");
   }
 

@@ -22,6 +22,11 @@ export default async function CheckInPage(props: { params: Promise<{ gymSlug: st
     return <StatusView status="error" message="This gym does not exist on the Gimmi network." />;
   }
 
+  // ==== TRUST AND SAFETY: VERIFICATION LOCKOUT ====
+  if (gym.verificationStatus !== "APPROVED") {
+    return <StatusView status="error" message="Gym Not Verified" subtext="This facility is currently undergoing physical Trust & Safety verification and cannot accept check-ins yet." />;
+  }
+
   const user = await prisma.user.findUnique({ where: { id: userId } });
 
   // 1.5 Validate Secure Static QR Token

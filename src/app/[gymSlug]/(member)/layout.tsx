@@ -29,7 +29,7 @@ export default async function MemberLayout({
   // --- Access Control: ensure the user has an ACCEPTED JoinRequest ---
   const gym = await prisma.gym.findUnique({ where: { slug: gymSlug.toLowerCase() } });
 
-  if (!gym) {
+  if (!gym || gym.verificationStatus !== "APPROVED") {
     redirect("/customer");
   }
 
