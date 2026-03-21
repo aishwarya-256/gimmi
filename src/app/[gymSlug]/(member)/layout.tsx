@@ -21,6 +21,11 @@ export default async function MemberLayout({
     redirect("/sign-in");
   }
 
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user || !user.name || user.name.trim().length < 2) {
+    redirect(`/${gymSlug}/setup-profile`);
+  }
+
   // --- Access Control: ensure the user has an ACCEPTED JoinRequest ---
   const gym = await prisma.gym.findUnique({ where: { slug: gymSlug.toLowerCase() } });
 

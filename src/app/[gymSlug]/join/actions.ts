@@ -19,15 +19,25 @@ export async function joinGymAction(formData: FormData) {
   if (!gymId || !planId) redirect("/customer");
 
   // Make sure the user exists in our DB first
-  await prisma.user.upsert({
-    where: { id: userId },
-    update: {},
-    create: {
-      id: userId,
-      email: user.emailAddresses[0]?.emailAddress || `user-${userId}@gimmi.app`,
-      name: user.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : "Gym Member",
-    }
-  });
+  const existingUser = await prisma.user.findUnique({ where: { id: userId } });
+  
+  const isNameInvalid = !existingUser || !existingUser.name || existingUser.name.trim().length < 2 || existingUser.name === "Gym Member";
+  
+  if (isNameInvalid) {
+    // If they don't exist yet, we still create a placeholder so we have their email, 
+    // but they must setup profile
+    await prisma.user.upsert({
+      where: { id: userId },
+      update: {},
+      create: {
+        id: userId,
+        email: user.emailAddresses[0]?.emailAddress || `user-${userId}@gimmi.app`,
+        name: user.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : "Gym Member",
+      }
+    });
+
+    redirect(`/${slug}/setup-profile`);
+  }
 
   const gym = await prisma.gym.findUnique({
     where: { slug: slug.toLowerCase() }

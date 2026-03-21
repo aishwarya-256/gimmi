@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
     // 2. Check membership is active
     const membership = await prisma.gymMember.findUnique({
       where: { userId_gymId: { userId: payload.userId, gymId: payload.gymId } },
-      include: { user: true },
+      include: { user: true, plan: true },
     });
 
     if (!membership) {
@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
       where: {
         gymId: payload.gymId,
         userId: payload.userId,
-        status: "SUCCESS",
+        isSuccess: true,
         entryTime: { gte: twoHoursAgo },
       },
     });
@@ -83,11 +83,13 @@ export async function POST(req: NextRequest) {
     }
 
     // 4. Record successful attendance
-    const record = await prisma.attendance.create({
+    await prisma.attendance.create({
       data: {
         gymId: payload.gymId,
         userId: payload.userId,
-        status: "SUCCESS",
+        memberName: membership.user.name,
+        planStatus: membership.plan?.name || "Active",
+        isSuccess: true,
       },
     });
 
@@ -96,7 +98,7 @@ export async function POST(req: NextRequest) {
       message: "Check-in successful!",
       memberName: membership.user.name,
       memberRole: membership.role,
-      entryTime: record.entryTime,
+      entryTime: new Date(),
     });
 
   } catch (error) {

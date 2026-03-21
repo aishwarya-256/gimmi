@@ -26,12 +26,7 @@ enum MemberStatus {
   CANCELLED
 }
 
-enum ScanStatus {
-  SUCCESS
-  DENIED_EXPIRED
-  DENIED_COOLDOWN
-  DENIED_INVALID
-}
+
 
 enum VerificationStatus {
   PENDING
@@ -88,6 +83,7 @@ model GymMember {
   role           GymRole       @default(MEMBER)
   status         MemberStatus  @default(ACTIVE)
   planId         String? 
+  planExpiresAt  DateTime?
   user           User          @relation(fields: [userId], references: [id])
   gym            Gym           @relation(fields: [gymId], references: [id])
   plan           MembershipPlan? @relation(fields: [planId], references: [id])
@@ -135,11 +131,25 @@ model Attendance {
   id             String        @id @default(uuid())
   gymId          String
   userId         String
+  memberName     String        @default("Unknown")
+  planStatus     String        @default("Unknown")
+  isSuccess      Boolean       @default(false)
+  denialReason   String?
   scannedById    String?       
   entryTime      DateTime      @default(now())
-  status         ScanStatus    
   gym            Gym           @relation(fields: [gymId], references: [id])
   user           User          @relation(fields: [userId], references: [id])
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String?
+  gymId     String?
+  title     String
+  message   String
+  type      String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
 }
 
 model Trainer {

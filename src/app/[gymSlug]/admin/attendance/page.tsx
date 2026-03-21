@@ -8,7 +8,8 @@ import { getPusherClient } from "@/lib/pusher-client";
 
 type AttendanceRecord = {
   id: string;
-  status: string;
+  isSuccess: boolean;
+  denialReason?: string | null;
   entryTime: Date | string;
   user: {
     name: string;
@@ -32,7 +33,7 @@ export default function QRScannerPage({ params }: { params: Promise<{ gymSlug: s
         getGymIdBySlug(p.gymSlug),
         getGymQrSecret(p.gymSlug)
       ]);
-      setAttendances(data as AttendanceRecord[]);
+      setAttendances(data as unknown as AttendanceRecord[]);
       if (id) setGymId(id);
       if (secret) setQrSecret(secret);
     });
@@ -51,7 +52,7 @@ export default function QRScannerPage({ params }: { params: Promise<{ gymSlug: s
     channel.bind("entry-log", (data: { userName: string; userEmail: string; planName: string; timestamp: string }) => {
       const newRecord: AttendanceRecord = {
         id: `live-${Date.now()}`,
-        status: "SUCCESS",
+        isSuccess: true,
         entryTime: data.timestamp,
         user: {
           name: data.userName,
@@ -163,10 +164,10 @@ export default function QRScannerPage({ params }: { params: Promise<{ gymSlug: s
                     </div>
                   </div>
                   <div className={`px-3 py-1 text-xs font-bold rounded-lg ${
-                    record.status === 'SUCCESS' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/20' : 
+                    record.isSuccess ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/20' : 
                     'bg-red-500/20 text-red-400 border border-red-500/20'
                   }`}>
-                    {record.status}
+                    {record.isSuccess ? 'SUCCESS' : (record.denialReason || 'DENIED')}
                   </div>
                 </div>
               ))

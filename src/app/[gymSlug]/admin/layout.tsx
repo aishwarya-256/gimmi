@@ -2,7 +2,7 @@ import { auth } from "@clerk/nextjs/server";
 import { UserButton } from "@clerk/nextjs";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { Activity, LayoutDashboard, CreditCard, Users, Megaphone, QrCode, Phone, User } from "lucide-react";
+import { Activity, LayoutDashboard, CreditCard, Users, Megaphone, QrCode, Phone, User, UserX } from "lucide-react";
 
 export default async function GymAdminLayout({
   children,
@@ -33,6 +33,7 @@ export default async function GymAdminLayout({
     { label: "Join Requests", href: `/${gymSlug}/admin/requests`, icon: Users },
     { label: "Plans", href: `/${gymSlug}/admin/plans`, icon: CreditCard },
     { label: "Members", href: `/${gymSlug}/admin/members`, icon: Users },
+    { label: "Inactive", href: `/${gymSlug}/admin/inactive`, icon: UserX },
     { label: "Announcements", href: `/${gymSlug}/admin/announcements`, icon: Megaphone },
     { label: "Attendance", href: `/${gymSlug}/admin/attendance`, icon: QrCode },
     { label: "Trainers", href: `/${gymSlug}/admin/trainers`, icon: User },

@@ -8,9 +8,7 @@ export default async function MemberAttendancePage(props: { params: Promise<{ gy
 
   const statusConfig: Record<string, { icon: React.ReactNode; color: string }> = {
     SUCCESS: { icon: <CheckCircle size={14} />, color: "text-emerald-400 bg-emerald-500/10 ring-emerald-500/20" },
-    DENIED_EXPIRED: { icon: <XCircle size={14} />, color: "text-red-400 bg-red-500/10 ring-red-500/20" },
-    DENIED_COOLDOWN: { icon: <Clock size={14} />, color: "text-amber-400 bg-amber-500/10 ring-amber-500/20" },
-    DENIED_INVALID: { icon: <XCircle size={14} />, color: "text-red-400 bg-red-500/10 ring-red-500/20" },
+    DENIED: { icon: <XCircle size={14} />, color: "text-red-400 bg-red-500/10 ring-red-500/20" },
   };
 
   return (
@@ -34,7 +32,10 @@ export default async function MemberAttendancePage(props: { params: Promise<{ gy
       ) : (
         <div className="space-y-2">
           {attendance.map((record) => {
-            const config = statusConfig[record.status] || statusConfig.DENIED_INVALID;
+            const isSuccess = record.isSuccess;
+            const config = isSuccess ? statusConfig.SUCCESS : statusConfig.DENIED;
+            const label = isSuccess ? "SUCCESS" : (record.denialReason || "DENIED");
+
             return (
               <div key={record.id} className="flex items-center justify-between p-4 bg-white/[0.03] border border-white/[0.06] rounded-xl hover:bg-white/[0.05] transition-all">
                 <div className="flex items-center gap-4">
@@ -57,8 +58,8 @@ export default async function MemberAttendancePage(props: { params: Promise<{ gy
                     </p>
                   </div>
                 </div>
-                <span className={`text-[11px] font-semibold px-3 py-1 rounded-full ring-1 ${config.color}`}>
-                  {record.status.replace("_", " ")}
+                <span className={`text-[11px] font-semibold px-3 py-1 rounded-full ring-1 ${config.color} uppercase`}>
+                  {label}
                 </span>
               </div>
             );

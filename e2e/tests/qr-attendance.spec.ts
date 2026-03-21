@@ -22,7 +22,15 @@ test.describe('QR Attendance System (E2E)', () => {
     unpaidId = await getUserIdByEmail(process.env.TEST_UNPAID_EMAIL!) || `unpaid-${Date.now()}`;
 
     // Clean any prior dangling test gyms just in case
-    await prisma.gym.deleteMany({ where: { slug: { startsWith: 'qr-test-gym-' } } });
+    const oldGyms = await prisma.gym.findMany({ where: { slug: { startsWith: 'qr-test-gym-' } }, select: { id: true } });
+    const oldGymIds = oldGyms.map(g => g.id);
+    if (oldGymIds.length > 0) {
+      await prisma.attendance.deleteMany({ where: { gymId: { in: oldGymIds } } });
+      await prisma.joinRequest.deleteMany({ where: { gymId: { in: oldGymIds } } });
+      await prisma.gymMember.deleteMany({ where: { gymId: { in: oldGymIds } } });
+      await prisma.membershipPlan.deleteMany({ where: { gymId: { in: oldGymIds } } });
+      await prisma.gym.deleteMany({ where: { id: { in: oldGymIds } } });
+    }
 
     // Seed comprehensive test Gym environment
     const gym = await prisma.gym.create({
@@ -38,7 +46,7 @@ test.describe('QR Attendance System (E2E)', () => {
     gymId = gym.id;
 
     const plan = await prisma.membershipPlan.create({
-      data: { gymId, name: 'Pro Tester Plan', price: 50, interval: 'MONTHLY' }
+      data: { gymId, name: 'Pro Tester Plan', price: 50, durationDays: 30 }
     });
 
     // Paid Member
@@ -52,6 +60,10 @@ test.describe('QR Attendance System (E2E)', () => {
   test.afterAll(async () => {
     if (gymId) {
       // Prisma cascade deletion logic ensures cleanup handles related nested records (like Attendance logs)
+      await prisma.attendance.deleteMany({ where: { gymId } });
+      await prisma.joinRequest.deleteMany({ where: { gymId } });
+      await prisma.gymMember.deleteMany({ where: { gymId } });
+      await prisma.membershipPlan.deleteMany({ where: { gymId } });
       await prisma.gym.delete({ where: { id: gymId } });
     }
   });

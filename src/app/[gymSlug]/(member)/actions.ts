@@ -47,7 +47,7 @@ export async function getMemberDashboard(gymSlug: string) {
       take: 5,
     }),
     prisma.attendance.count({
-      where: { gymId: gym.id, userId, status: "SUCCESS" },
+      where: { gymId: gym.id, userId, isSuccess: true },
     }),
     prisma.attendance.findMany({
       where: { gymId: gym.id, userId },
@@ -94,6 +94,11 @@ export async function verifyGymEntryAction(gymSlug: string, token: string) {
   const { userId } = await auth();
   if (!userId) return { success: false, message: "Authentication required" };
 
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user || !user.name || user.name.trim().length < 2) {
+    return { success: false, message: "Profile incomplete. Real name required." };
+  }
+
   const gym = await prisma.gym.findUnique({
     where: { slug: gymSlug },
     include: {
@@ -107,52 +112,24 @@ export async function verifyGymEntryAction(gymSlug: string, token: string) {
   const member = gym.members[0];
   const joinRequest = gym.joinRequests[0];
 
-  const hasAccess = 
-    (member && ["OWNER", "MANAGER", "STAFF"].includes(member.role)) || 
-    (member && member.status === "ACTIVE") || 
-    (joinRequest);
-
-  if (!hasAccess) {
-    return { success: false, message: `Access Denied: Not an active member or owner. (Role: ${member?.role}, Status: ${member?.status}, Join: ${(joinRequest as any)?.status})` };
-  }
-
-  // 3. Verify Token
-  try {
-    let secretToCheck = token;
-    
-    // If the scanned token is a URL (the desk poster), extract the "t" param
-    if (token.includes("check-in?t=")) {
-      try {
-        const url = new URL(token);
-        secretToCheck = url.searchParams.get("t") || token;
-      } catch (e) {
-        // Fallback to raw token if URL parsing fails
-      }
-    }
-
-    if (!gym.qrSecret) {
-      return { success: false, message: "Debug: Gym has no qrSecret set." };
-    }
-    if (gym.qrSecret !== secretToCheck) {
-      return { success: false, message: `Debug Mismatch: DB[${gym.qrSecret.slice(0,5)}...] != Scan[${secretToCheck.slice(0,5)}...]` };
-    }
-
-    // 4. Mark Attendance
+  const logScan = async (isSuccess: boolean, reason: string | null = null, planStatus: string = "None") => {
     await prisma.attendance.create({
       data: {
         userId,
         gymId: gym.id,
-        status: "SUCCESS",
+        memberName: user.name,
+        planStatus,
+        isSuccess,
+        denialReason: reason,
         entryTime: new Date(),
       }
     });
+  };
 
-    // 5. Trigger Pusher for Admin Dashboard live feed
+  async function triggerPusher() {
     try {
       const { pusherServer } = await import("@/lib/pusher");
-      const user = await prisma.user.findUnique({ where: { id: userId } });
-      
-      await pusherServer.trigger(`gym-${gym.id}`, "entry-log", {
+      await pusherServer.trigger(`gym-${gym?.id}`, "entry-log", {
         userName: user?.name || "Member",
         userEmail: user?.email,
         planName: member?.plan?.name || member?.role || "Approved Member",
@@ -161,8 +138,65 @@ export async function verifyGymEntryAction(gymSlug: string, token: string) {
     } catch (pushErr) {
       console.error("Pusher trigger failed:", pushErr);
     }
+  }
 
+  try {
+    let secretToCheck = token;
+    
+    if (token.includes("check-in?t=")) {
+      try {
+        const url = new URL(token);
+        secretToCheck = url.searchParams.get("t") || token;
+        
+        const pathSlug = url.pathname.split('/')[1];
+        if (pathSlug && pathSlug !== gymSlug) {
+          await logScan(false, "Wrong Gym QR Scanned");
+          return { success: false, message: "Wrong Gym QR Scanned" };
+        }
+      } catch (e) {}
+    }
+
+    if (!gym.qrSecret || gym.qrSecret !== secretToCheck) {
+      await logScan(false, "Invalid QR token or tampered URL");
+      return { success: false, message: "Invalid or expired QR code" };
+    }
+
+    const isOwnerOrStaff = member && ["OWNER", "MANAGER", "STAFF"].includes(member.role);
+    if (isOwnerOrStaff) {
+      await logScan(true, null, member.role);
+      await triggerPusher();
+      return { success: true, message: `Welcome to ${gym.name}!` };
+    }
+
+    if (!member && !joinRequest) {
+      await logScan(false, "Not requested or approved yet");
+      return { success: false, message: "Your membership is not approved yet" };
+    }
+
+    if (!member || member.status !== "ACTIVE") {
+      await logScan(false, `Membership Status: ${member?.status || 'Missing'}`);
+      return { success: false, message: "You don't have an active membership" };
+    }
+
+    if (!member.planId || !member.plan) {
+      await logScan(false, "No Membership Plan", "None");
+      return { success: false, message: "Please purchase a membership plan" };
+    }
+
+    let expiresAt = member.planExpiresAt;
+    if (!expiresAt) {
+      expiresAt = new Date(new Date(member.createdAt).getTime() + member.plan.durationDays * 24 * 60 * 60 * 1000);
+    }
+
+    if (new Date() > expiresAt) {
+      await logScan(false, "Plan Expired", member.plan.name);
+      return { success: false, message: "Your membership plan has expired" };
+    }
+
+    await logScan(true, null, member.plan.name);
+    await triggerPusher();
     return { success: true, message: `Welcome to ${gym.name}!` };
+
   } catch (err: any) {
     console.error("verifyGymEntryAction error:", err);
     return { success: false, message: `System Error: ${err.message}` };

@@ -22,6 +22,8 @@ export default async function CheckInPage(props: { params: Promise<{ gymSlug: st
     return <StatusView status="error" message="This gym does not exist on the Gimmi network." />;
   }
 
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+
   // 1.5 Validate Secure Static QR Token
   if (!token || gym.qrSecret !== token) {
     return <StatusView status="error" message="Invalid or Expired QR Code" subtext="Please scan the latest poster at the front desk." actionLink={`/${gymSlug}`} actionText="Return Home" />;
@@ -56,7 +58,7 @@ export default async function CheckInPage(props: { params: Promise<{ gymSlug: st
   // 4. Cooldown Protection (e.g., prevent scanning twice by accident in 2 hours)
   const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
   const recentEntry = await prisma.attendance.findFirst({
-    where: { gymId: gym.id, userId, entryTime: { gte: twoHoursAgo } },
+    where: { gymId: gym.id, userId, entryTime: { gte: twoHoursAgo }, isSuccess: true },
   });
 
   if (recentEntry) {
@@ -76,14 +78,15 @@ export default async function CheckInPage(props: { params: Promise<{ gymSlug: st
     data: {
       gymId: gym.id,
       userId,
-      status: "SUCCESS",
+      memberName: user?.name || "Unknown",
+      planStatus: member?.plan?.name || member?.role || "Active",
+      isSuccess: true,
     },
   });
 
   // 6. Trigger Pusher for Admin Live Dashboard
   try {
     const { pusherServer } = await import("@/lib/pusher");
-    const user = await prisma.user.findUnique({ where: { id: userId } });
     await pusherServer.trigger(`gym-${gym.id}`, "entry-log", {
       userName: user?.name || "Member",
       userEmail: user?.email,
