@@ -72,7 +72,6 @@ export async function POST(req: NextRequest) {
       where: {
         gymId: payload.gymId,
         userId: payload.userId,
-        // @ts-expect-error - IDE Cache Lag
         isSuccess: true,
         entryTime: { gte: twoHoursAgo },
       },
@@ -92,7 +91,6 @@ export async function POST(req: NextRequest) {
       data: {
         gymId: payload.gymId,
         userId: payload.userId,
-        // @ts-expect-error - IDE Cache Lag
         memberName: membership.user.name,
         planStatus: membership.plan?.name || "Active",
         isSuccess: true,
