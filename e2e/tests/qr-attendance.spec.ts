@@ -32,39 +32,61 @@ test.describe('QR Attendance System (E2E)', () => {
       await prisma.gym.deleteMany({ where: { id: { in: oldGymIds } } });
     }
 
-    // Seed comprehensive test Gym environment
-    const gym = await prisma.gym.create({
-      data: {
+    // Seed comprehensive test Gym environment idempotently
+    const gym = await prisma.gym.upsert({
+      where: { slug: slug },
+      update: {},
+      create: {
         name: 'QR Automated Gym',
         slug: slug,
         qrSecret: 'playwright-test-secret',
-        members: {
-          create: { userId: ownerId, role: 'OWNER', status: 'ACTIVE' }
-        }
       }
     });
     gymId = gym.id;
+
+    await prisma.gymMember.upsert({
+      where: { userId_gymId: { userId: ownerId, gymId } },
+      update: { role: 'OWNER', status: 'ACTIVE' },
+      create: { userId: ownerId, gymId, role: 'OWNER', status: 'ACTIVE' }
+    });
 
     const plan = await prisma.membershipPlan.create({
       data: { gymId, name: 'Pro Tester Plan', price: 50, durationDays: 30 }
     });
 
     // Paid Member
-    await prisma.joinRequest.create({ data: { userId: memberId, gymId, status: 'ACCEPTED' } });
-    await prisma.gymMember.create({ data: { userId: memberId, gymId, role: 'MEMBER', status: 'ACTIVE', planId: plan.id } });
+    await prisma.joinRequest.upsert({
+      where: { userId_gymId: { userId: memberId, gymId } },
+      update: { status: 'ACCEPTED' },
+      create: { userId: memberId, gymId, status: 'ACCEPTED' }
+    });
+
+    await prisma.gymMember.upsert({
+      where: { userId_gymId: { userId: memberId, gymId } },
+      update: { role: 'MEMBER', status: 'ACTIVE', planId: plan.id },
+      create: { userId: memberId, gymId, role: 'MEMBER', status: 'ACTIVE', planId: plan.id }
+    });
 
     // Unpaid Member (Rejected)
-    await prisma.joinRequest.create({ data: { userId: unpaidId, gymId, status: 'REJECTED' } });
+    await prisma.joinRequest.upsert({
+      where: { userId_gymId: { userId: unpaidId, gymId } },
+      update: { status: 'REJECTED' },
+      create: { userId: unpaidId, gymId, status: 'REJECTED' }
+    });
   });
 
   test.afterAll(async () => {
     if (gymId) {
-      // Prisma cascade deletion logic ensures cleanup handles related nested records (like Attendance logs)
-      await prisma.attendance.deleteMany({ where: { gymId } });
-      await prisma.joinRequest.deleteMany({ where: { gymId } });
-      await prisma.gymMember.deleteMany({ where: { gymId } });
-      await prisma.membershipPlan.deleteMany({ where: { gymId } });
-      await prisma.gym.delete({ where: { id: gymId } });
+      try {
+        // Prisma cascade deletion logic ensures cleanup handles related nested records (like Attendance logs)
+        await prisma.attendance.deleteMany({ where: { gymId } });
+        await prisma.joinRequest.deleteMany({ where: { gymId } });
+        await prisma.gymMember.deleteMany({ where: { gymId } });
+        await prisma.membershipPlan.deleteMany({ where: { gymId } });
+        await prisma.gym.deleteMany({ where: { id: gymId } }); // Resilient deleteMany instead of throwing delete()
+      } catch (e) {
+        console.error("Cleanup warning", e);
+      }
     }
   });
 

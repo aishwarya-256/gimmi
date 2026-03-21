@@ -1,4 +1,4 @@
-import { test as setup, expect } from '@playwright/test';
+import { test as setup, expect, Page } from '@playwright/test';
 import path from 'path';
 import fs from 'fs';
 
@@ -13,7 +13,7 @@ if (!fs.existsSync(authDir)) {
   fs.mkdirSync(authDir, { recursive: true });
 }
 
-async function loginAndSaveState(page: any, email: string, password: string, storageFile: string) {
+async function loginAndSaveState(page: Page, email: string, password: string, storageFile: string) {
   await page.context().clearCookies();
   await page.goto('/sign-in'); // Standard Clerk sign-in page path
   
@@ -40,30 +40,32 @@ async function loginAndSaveState(page: any, email: string, password: string, sto
 
 setup('authenticate owner', async ({ page }) => {
   const { TEST_OWNER_EMAIL, TEST_OWNER_PASSWORD } = process.env;
-  if (TEST_OWNER_EMAIL && TEST_OWNER_PASSWORD) {
-    await loginAndSaveState(page, TEST_OWNER_EMAIL, TEST_OWNER_PASSWORD, authFileOwner);
-  } else {
-    console.warn('Skipping Owner auth: Missing TEST_OWNER_EMAIL or password');
+  if (!TEST_OWNER_EMAIL || !TEST_OWNER_PASSWORD) {
+    throw new Error('CRITICAL FAIL-FAST: Missing TEST_OWNER_EMAIL or password environment variables.');
   }
+  await loginAndSaveState(page, TEST_OWNER_EMAIL, TEST_OWNER_PASSWORD, authFileOwner);
 });
 
 setup('authenticate paid member', async ({ page }) => {
   const { TEST_MEMBER_EMAIL, TEST_MEMBER_PASSWORD } = process.env;
-  if (TEST_MEMBER_EMAIL && TEST_MEMBER_PASSWORD) {
-    await loginAndSaveState(page, TEST_MEMBER_EMAIL, TEST_MEMBER_PASSWORD, authFileMember);
+  if (!TEST_MEMBER_EMAIL || !TEST_MEMBER_PASSWORD) {
+    throw new Error('CRITICAL FAIL-FAST: Missing TEST_MEMBER_EMAIL or password environment variables.');
   }
+  await loginAndSaveState(page, TEST_MEMBER_EMAIL, TEST_MEMBER_PASSWORD, authFileMember);
 });
 
 setup('authenticate unpaid user', async ({ page }) => {
   const { TEST_UNPAID_EMAIL, TEST_UNPAID_PASSWORD } = process.env;
-  if (TEST_UNPAID_EMAIL && TEST_UNPAID_PASSWORD) {
-    await loginAndSaveState(page, TEST_UNPAID_EMAIL, TEST_UNPAID_PASSWORD, authFileUnpaid);
+  if (!TEST_UNPAID_EMAIL || !TEST_UNPAID_PASSWORD) {
+    throw new Error('CRITICAL FAIL-FAST: Missing TEST_UNPAID_EMAIL or password environment variables.');
   }
+  await loginAndSaveState(page, TEST_UNPAID_EMAIL, TEST_UNPAID_PASSWORD, authFileUnpaid);
 });
 
 setup('authenticate baseline customer', async ({ page }) => {
   const { TEST_CUSTOMER_EMAIL, TEST_CUSTOMER_PASSWORD } = process.env;
-  if (TEST_CUSTOMER_EMAIL && TEST_CUSTOMER_PASSWORD) {
-    await loginAndSaveState(page, TEST_CUSTOMER_EMAIL, TEST_CUSTOMER_PASSWORD, authFileCustomer);
+  if (!TEST_CUSTOMER_EMAIL || !TEST_CUSTOMER_PASSWORD) {
+    throw new Error('CRITICAL FAIL-FAST: Missing TEST_CUSTOMER_EMAIL or password environment variables.');
   }
+  await loginAndSaveState(page, TEST_CUSTOMER_EMAIL, TEST_CUSTOMER_PASSWORD, authFileCustomer);
 });
