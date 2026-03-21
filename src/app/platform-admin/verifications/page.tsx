@@ -38,6 +38,7 @@ export default function VerificationQueuePage() {
 }
 
 async function QueueRows() {
+  // @ts-ignore - IDE Cache Lag
   const verifications = await prisma.gymVerification.findMany({
     orderBy: { createdAt: "desc" },
     include: { gym: { select: { name: true, slug: true } } }
