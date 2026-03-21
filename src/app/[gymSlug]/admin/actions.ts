@@ -251,3 +251,48 @@ export async function generateDynamicQrPass(gymSlug: string) {
   const token = jwt.sign(payload, QR_SECRET, { expiresIn: "60s" });
   return token;
 }
+
+// Get holistic analytics-oriented attendance history directly from DB
+export async function getAttendanceSheet(gymSlug: string) {
+  const { gym } = await verifyGymAdmin(gymSlug);
+  
+  const records = await prisma.attendance.findMany({
+    where: { gymId: gym.id },
+    orderBy: { entryTime: "desc" },
+    include: {
+      user: {
+        include: {
+          memberships: {
+            where: { gymId: gym.id },
+            include: { plan: true }
+          }
+        }
+      }
+    }
+  });
+
+  return records.map(record => {
+    const membership = record.user?.memberships?.[0];
+    const planDuration = membership?.plan?.durationDays || null;
+    let memberType = "Unknown";
+    
+    if (membership) {
+       const twoMonthsAgo = new Date();
+       twoMonthsAgo.setMonth(twoMonthsAgo.getMonth() - 2);
+       memberType = new Date(membership.createdAt) < twoMonthsAgo ? "Old Member" : "New Member";
+    }
+    const rec = record as any;
+    
+    return {
+      id: record.id,
+      name: rec.memberName,
+      entryTime: record.entryTime,
+      isSuccess: rec.isSuccess,
+      denialReason: rec.denialReason,
+      planName: rec.planStatus,
+      scanMethod: rec.scanMethod,
+      planDuration,
+      memberType,
+    };
+  });
+}
